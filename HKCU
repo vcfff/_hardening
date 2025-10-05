@@ -1,0 +1,949 @@
+Windows Registry Editor Version 5.00
+;HARDENING NOTES 2025
+;Key references used (Windows 11 24H2/25H2+): Microsoft Security Baseline summaries (24H2→25H2 evolution)
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\activity]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat]
+"Value"="Deny"
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\gazeInput]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\graphicsCaptureProgrammatic]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\graphicsCaptureWithoutBorder]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\graphicsCaptureWithoutCursor]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\internetClient]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\internetClientServer]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\musicLibrary]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\objects3D]
+"Value"="Deny"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics]
+"Value"="Deny" ; Block UWP/Store apps from reading app-diagnostics (privacy ↑).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation]
+"Value"="Deny" ; Block access to account name/pic info.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary]
+"Value"="Deny" ; Deny library (Documents) capability to UWP apps.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary]
+"Value"="Deny" ; Deny library (Pictures) capability.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary]
+"Value"="Deny" ; Deny library (Videos) capability.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess]
+"Value"="Deny" ; Deny UWP broad FS access capability.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts]
+"Value"="Deny" ; Deny contacts access.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email]
+"Value"="Deny" ; Deny email access.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks]
+"Value"="Deny" ; Deny tasks/calendar data.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory]
+"Value"="Deny" ; Deny call history.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appointments]
+"Value"="Deny" ; Deny appointments/calendar.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize]
+"StartupDelayInMSec"=dword:00000000 ; Remove UWP startup delay (perf tweak).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"TaskbarAl"=dword:00000000 ; Taskbar alignment: 0=Left, 1=Center (cosmetic).
+"TaskbarDa"=dword:00000000 ; Hide Widgets/News (0=hide).
+"DisallowShaking"=dword:00000001 ; Disable Aero Shake (UX).
+"ShowSecondsInSystemClock"=dword:00000000 ; Don’t show seconds (perf/UX).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI]
+"DisableAIDataAnalysis"=dword:00000001 ; Block client AI analysis features (privacy).
+
+[HKEY_CURRENT_USER\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell]
+"FolderType"="NotSpecified" ; Use generic folder template (UX).
+
+[HKEY_CURRENT_USER\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32]
+@="" ; Enable classic right-click menu in Win11 (UI behavior tweak).
+
+[HKEY_CURRENT_USER\Software\Microsoft\input]
+"IsInputAppPreloadEnabled"=dword:00000000 ; Don’t preload TextInputHost (perf/privacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Dsh]
+"IsPrelaunchEnabled"=dword:00000000 ; Disable Start/Taskbar prelaunch (perf).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags]
+"DisablePcaUI"=dword:00000001 ; Disable Program Compatibility Assistant UI (fewer prompts; small risk missing compat shims).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\EUDC]
+"EnableEUDC"=dword:00000000 ; Disable custom fonts (mitigate font-based attacks).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\Winlogon]
+"RestartApps"=dword:00000000 ; Don’t auto-reopen apps after sign-in.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Terminal Server Client]
+"AutoReconnect"=dword:00000000 ; Disable auto-reconnect (opsec).
+"RedirectClipboard"=dword:00000000 ; Block clipboard redirection (data exfil ↓).
+"RDGClientTransport"=dword:00000001 ; Force TLS over HTTPS transport (more reliable through proxies).
+"DisablePasswordSaving"=dword:00000001 ; Don’t save RDP creds (opsec).
+"Default"=- ; Clear default RDP target MRU (privacy).
+"MRU0"=- ; Clear MRU entries (privacy).
+"MRU1"=- 
+"MRU2"=- 
+"MRU3"=- 
+"MRU4"=- 
+"MRU5"=- 
+"MRU6"=- 
+"MRU7"=- 
+"MRU8"=- 
+"MRU9"=- 
+"RedirectDrives"=dword:00000000 ; Block drive redirection (data exfil ↓).
+"RedirectPrinters"=dword:00000000 ; Block printer redirection (attack surface ↓).
+"RedirectSmartCards"=dword:00000000 ; Block smart card redirection (use local when needed).
+"SavePassword"=dword:00000000 ; No saved passwords (opsec).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\FlipAhead]
+"Enabled"=dword:00000000 ; Disable Flip Ahead (legacy IE feature).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AccountNotifications]
+"EnableAccountNotifications"=dword:00000000 ; MSA/AAD nags off.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ActivityFeed]
+"EnableActivityFeed"=dword:00000000 ; Timeline off.
+"PublishUserActivities"=dword:00000000 ; Don’t publish activities.
+"UploadUserActivities"=dword:00000000 ; Don’t upload activities.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo]
+"Enabled"=dword:00000000 ; Disable per-user advertising ID.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AppModelUnlock]
+"AllowAllTrustedApps"=dword:00000000 ; No sideloading (user).
+"AllowDevelopmentWithoutDevLicense"=dword:00000000 ; No dev mode.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications]
+"GlobalUserDisabled"=dword:00000001 ; Block background tasks for UWP apps.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager]
+"ContentDeliveryAllowed"=dword:00000000 ; Block content delivery (ads/tips).
+"OemPreInstalledAppsEnabled"=dword:00000000 ; No OEM apps.
+"PreInstalledAppsEnabled"=dword:00000000 ; No preinstall auto-provision.
+"PreInstalledAppsEverEnabled"=dword:00000000 ; Mark as never enabled.
+"RotatingLockScreenEnabled"=dword:00000000 ; Spotlight lockscreen off.
+"RotatingLockScreenOverlayEnabled"=dword:00000000 ; Overlay off.
+"SilentInstalledAppsEnabled"=dword:00000000 ; Stop silent installs.
+"SoftLandingEnabled"=dword:00000000 ; Disable first-run promos.
+"SubscribedContent-310093Enabled"=dword:00000000 ; Disable Spotlight feedlets…
+"SubscribedContent-314559Enabled"=dword:00000000 ; (series of Spotlight/feed toggles)
+"SubscribedContent-338387Enabled"=dword:00000000
+"SubscribedContent-338388Enabled"=dword:00000000
+"SubscribedContent-338389Enabled"=dword:00000000
+"SubscribedContent-338393Enabled"=dword:00000000
+"SubscribedContent-338394Enabled"=dword:00000000
+"SubscribedContent-353694Enabled"=dword:00000000
+"SubscribedContent-353696Enabled"=dword:00000000
+"SubscribedContent-353698Enabled"=dword:00000000
+"SubscribedContent-353699Enabled"=dword:00000000
+"SubscribedContent-353701Enabled"=dword:00000000
+"SubscribedContent-353702Enabled"=dword:00000000
+"SubscribedContent-353703Enabled"=dword:00000000
+"SubscribedContent-353704Enabled"=dword:00000000
+"SystemPaneSuggestionsEnabled"=dword:00000000 ; No suggestions in Start.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Personalization\Settings]
+"AcceptedPrivacyPolicy"=dword:00000000 ; Don’t auto-accept MS personalization.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Clipboard]
+"CloudClipboardAutomaticUpload"=dword:00000000 ; Block cross-device sync.
+"EnableClipboardHistory"=dword:00000000 ; History off.
+"EnableCloudClipboard"=dword:00000000 ; Cloud off.
+
+[HKEY_CURRENT_USER\Software\Microsoft\GameBar]
+"AutoGameModeEnabled"=dword:00000000 ; Game Mode off (perf predictability).
+"GameDVR_Enabled"=dword:00000000 ; Disable capture.
+"ShowStartupPanel"=dword:00000000 ; Don’t show GameBar on launch.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Input\Settings]
+"InsightsEnabled"=dword:00000000 ; Block typing insights.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Input\TIPC]
+"Enabled"=dword:00000000 ; Disable Text Input Processor Cloud (privacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\InputPersonalization]
+"RestrictImplicitInkCollection"=dword:00000001 ; No implicit ink harvesting.
+"RestrictImplicitTextCollection"=dword:00000001 ; No implicit text harvesting.
+
+[HKEY_CURRENT_USER\Software\Microsoft\InputPersonalization\TrainedDataStore]
+"HarvestContacts"=dword:00000000 ; Don’t use contacts for predictions.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\FlipAhead]
+"FPEnabled"=dword:00000000 ; Legacy Flip Ahead off.
+
+[HKEY_CURRENT_USER\Software\Microsoft\MediaPlayer\Preferences]
+"SilentAcquisition"=dword:00000000 ; No silent DRM/meta fetch.
+"UsageTracking"=dword:00000000 ; Don’t send usage.
+
+[HKEY_CURRENT_USER\Software\Microsoft\RDClientRadc]
+"EnableMSRDCTelemetry"=dword:00000000 ; Disable MSRDC telemetry.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Siuf\Rules]
+"NumberOfSIUFInPeriod"=dword:00000000 ; No feedback prompts.
+"PeriodInNanoSeconds"=dword:00000000 ; Disable schedule.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
+"OneDrive"=- ; Remove OneDrive autorun (aligns with OneDrive hardening).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search]
+"BingSearchEnabled"=dword:00000000 ; No web results in search.
+"CortanaConsent"=dword:00000000 ; Disable Cortana.
+"SearchboxTaskbarMode"=dword:00000000 ; Hide search box/icon.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\SearchSettings]
+"IsAADCloudSearchEnabled"=dword:00000000 ; No AAD cloud search.
+"IsDeviceSearchHistoryEnabled"=dword:00000000 ; No local history.
+"IsDynamicSearchBoxAPIFeatureEnabled"=dword:00000000 ; Disable dynamic API.
+"IsDynamicSearchBoxEnabled"=dword:00000000 ; Disable dynamic box.
+"IsMSACloudSearchEnabled"=dword:00000000 ; No MSA cloud search.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Share]
+"NearShareChannel"=dword:00000000 ; Near Share off.
+"PublishUserActivities"=dword:00000000 ; Don’t publish activities.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CDP]
+"CdpSessionUserAuthzPolicy"=dword:00000000 ; Block cross-device platform.
+"NearShareChannelAppAuthzPolicy"=dword:00000000 ; Block app authz.
+"NearShareChannelUserAuthzPolicy"=dword:00000000 ; Block user authz.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\SmartActionPlatform\SmartClipboard]
+"Disabled"=dword:00000001 ; Disable Suggested Actions/Smart Clipboard.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize]
+"AppsUseLightTheme"=dword:00000000 ; Dark mode (UX).
+"EnableTransparency"=dword:00000000 ; No acrylic/transparency (privacy/UX).
+"SystemUsesLightTheme"=dword:00000000 ; Dark system theme.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\WindowsBackup]
+"DisableWindowsBackupPromotions"=dword:00000001 ; Hide backup promos.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\WinTrust\Trust Providers\Software Publishing]
+"State"=dword:00023c00 ; Tighten zone/publisher checks (legacy WinTrust UX).
+
+[HKEY_CURRENT_USER\Software\Microsoft\TabletTip\1.7]
+"EnableAutocorrection"=dword:00000000 ; No autocorrect (privacy).
+"EnableInlinePrediction"=dword:00000000 ; Disable cloud prediction.
+"EnableSpellcheck"=dword:00000000 ; Spellcheck off.
+"EnableTextPrediction"=dword:00000000 ; Text prediction off.
+"EnableDoubleTapSpace"=dword:00000000 ; UX choice.
+"EnableKeyAudioFeedback"=dword:00000000 ; No key sounds.
+"EnableTransparency"=dword:00000000 ; Solid UI.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\DWM]
+"EnableAeroPeek"=dword:00000000 ; Disable Peek (UX).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM]
+"EnableAeroPeek"=dword:00000000 ; Duplicate at user hive (UX).
+"ColorPrevalence"=dword:00000000 ; Don’t apply accent to title bars.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Explorer]
+"ClearRecentDocsOnExit"=dword:00000001 ; Clear Recent on logoff.
+"DisableNotificationCenter"=dword:00000001 ; Hide Action Center.
+"DisablePreviewPane"=dword:00000001 ; No preview pane (attack surface ↓).
+"DisableSearchBoxSuggestions"=dword:00000001 ; No suggestions.
+"DisableSearchHistory"=dword:00000001 ; No search history.
+"DisableThumbsDBOnNetworkFolders"=dword:00000001 ; Prevent Thumbs.db on shares.
+"HideRecentlyAddedApps"=dword:00000001 ; Hide recent apps in Start.
+"HideRecommendedSection"=dword:00000001 ; Hide “Recommended”.
+"NoPinningToTaskbar"=dword:00000001 ; Block pinning (opsec UX).
+"NoRecentDocsHistory"=dword:00000001 ; Don’t keep recent docs.
+"NoWindowMinimizingShortcuts"=dword:00000001 ; UX preference.
+"DisableThumbnailCache"=dword:00000001 ; Turn off thumbnail cache.
+"DisableThumbnails"=dword:00000001 ; No thumbnails (privacy/IO).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsCopilot]
+"TurnOffWindowsCopilot"=dword:00000001 ; Disable Copilot UI.
+"DisableCopilot"=dword:00000001 ; Redundant; also disables Copilot.
+
+[HKEY_CURRENT_USER\System\GameConfigStore]
+"GameDVR_Enabled"=dword:00000000 ; Per-user DVR off.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\VersionManager]
+"DownloadVersionList"=dword:00000000 ; No IE component ver list (legacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer]
+"SmartScreenEnabled"="RequireAdmin" ; Per-user SmartScreen prompt requires admin. NOTE: You set HKLM SmartScreen OFF earlier; HKLM wins → this may be inert.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\PushNotifications]
+"NoCloudApplicationNotification"=dword:00000001 ; Block cloud notifications.
+"ToastEnabled"=dword:00000001 ; Allow local toasts. (Intentional mix: cloud off, local ok.)
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WcmSvc\GroupPolicy]
+"fBlockNonDomain"=dword:00000001 ; Block Wi-Fi auto-connect on non-domain.
+"fMinimizeConnections"=dword:00000001 ; Prefer single, cost-aware connection.
+
+[HKEY_CURRENT_USER\Control Panel\Accessibility\FilterKeys]
+"Flags"="122" ; Disable FilterKeys hotkey/hold-downs (avoid hijacks).
+"HotkeyActive"="0" ; Disable hotkey.
+
+[HKEY_CURRENT_USER\Control Panel\Accessibility\StickyKeys]
+"Flags"="506" ; StickyKeys off & hotkey disabled.
+"HotkeyActive"="0" ; Disable hotkey.
+
+[HKEY_CURRENT_USER\Control Panel\Accessibility\ToggleKeys]
+"Flags"="58" ; ToggleKeys off & hotkey disabled.
+"HotkeyActive"="0" ; Disable hotkey.
+
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"AutoEndTasks"="1" ; Auto close hung apps at logoff.
+"ForegroundLockTimeout"=dword:00000000 ; No focus steal delay (UX).
+"MenuShowDelay"="0" ; Snappier menus.
+"MinAnimate"="0" ; Disable animations.
+"ScreenSaveActive"="1" ; Enable screensaver (to enforce lock).
+"ScreenSaverIsSecure"=dword:00000001 ; Require password on resume.
+"ScreenSaveTimeOut"="900" ; 15 min idle lock.
+"SCRNSAVE.EXE"="C:\\Windows\\System32\\scrnsave.scr" ; Blank saver (neutral).
+"JPEGImportQuality"=dword:00000064 ; UI.
+"HungAppTimeout"="2000" ; Faster hung detection.
+"WaitToKillAppTimeout"="2000" ; Faster logoff.
+"LowLevelHooksTimeout"="1000" ; Faster hook timeout.
+
+[HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics]
+"MinAnimate"="0" ; Reinforce no animation.
+
+[HKEY_CURRENT_USER\Software\Classes\CLSID\{26EE0668-A00A-44D7-9371-BEB064C98683}]
+"System.IsPinnedToNameSpaceTree"=dword:00000001 ; Pin “All Settings/Control Panel” in Explorer (UX).
+
+[HKEY_CURRENT_USER\Control Panel\International\User Profile]
+"HttpAcceptLanguageOptOut"=dword:00000001 ; Don’t auto-adjust Accept-Language (slight privacy).
+
+[HKEY_CURRENT_USER\Control Panel\Keyboard]
+"PrintScreenKeyForSnippingEnabled"=dword:00000000 ; Disable PrtScn→Snipping shortcut (UX/opsec).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\Windows]
+"LoadAppInit_DLLs"=dword:00000000 ; Don’t load user AppInit DLLs (attack surface ↓).
+"AppInit_DLLs"="" ; Ensure empty.
+"LegacyDefaultPrinterMode"=dword:00000001 ; Per-user default printer behavior (UX).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop]
+"NoActiveDesktop"=dword:00000001 ; Disable Active Desktop (legacy).
+"NoComponents"=dword:00000001 ; No AD components.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop\AdminComponent]
+"NoAddingComponents"=dword:00000001 ; Lockdown AD comps.
+"NoDeletingComponents"=dword:00000001 ; Lockdown AD comps.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Associations]
+"LowRiskFileTypes"="" ; No low-risk bypass list.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments]
+"SaveZoneInformation"=dword:00000001 ; Preserve Mark-of-the-Web.
+"ScanWithAntiVirus"=dword:00000001 ; AV scan downloads.
+"HideZoneInfoOnProperties"=dword:00000000 ; Show zone info.
+"LaunchProtocolInStartMenu"=dword:00000000 ; Don’t auto-launch protocols.
+"LowRiskFileTypes"="" ; No bypass list.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Calculator]
+"AllowGraphingCalculator"=dword:00000000 ; Block graphing calc (UX—if not needed).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Comdlg32]
+"NoFileMru"=dword:00000001 ; No file MRU in dialogs.
+"NoPlacesBar"=dword:00000000 ; Keep Places bar (usability).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\comdlg32\Placesbar]
+"Place0"="shell:Desktop" ; Custom Quick Access (UX).
+"Place1"="shell:Documents"
+"Place2"="shell:Downloads"
+"Place3"="shell:MyComputerFolder"
+"Place4"="%USERPROFILE%"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\DataCollection]
+"AllowTelemetry"=dword:00000000 ; Per-user: basic/none.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\WAU]
+"Disabled"=dword:00000001 ; Disable Windows Anytime Upgrade UI (legacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Ext]
+"RestrictToList"=dword:00000000 ; Don’t restrict shell/exts (neutral; consider 1 with an allowlist if you want stricter).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\MobilityCenter]
+"NoMobilityCenter"=dword:00000001 ; Hide Mobility Center.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Network]
+"NoEntireNetwork"=dword:00000001 ; Hide Entire Network in Explorer.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\PresentationSettings]
+"NoPresentationSettings"=dword:00000001 ; Disable presentation mode.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Programs]
+"NoDefaultPrograms"=dword:00000000 ; Allow Defaults UI.
+"NoProgramsAndFeatures"=dword:00000000 ; Allow Apps & Features.
+"NoWindowsFeatures"=dword:00000000 ; Allow Optional Features UI.
+"NoWindowsMarketplace"=dword:00000000 ; Allow Store access.
+"NoInstalledUpdates"=dword:00000000 ; Show Installed Updates.
+"NoGetPrograms"=dword:00000000 ; Allow Get Programs (legacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\SnippingTool]
+"DisableSnippingTool"=dword:00000001 ; Allow snipping (you disabled PrtScn mapping earlier).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\System]
+"DisableRegistryTools"=dword:00000001 ; **Blocks regedit for this user** (strong opsec, but hampers troubleshooting).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Windows]
+"TurnOffWinCal"=dword:00000001 ; Disable Windows Calendar (legacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Windows\Sidebar]
+"TurnOffSidebar"=dword:00000001 ; Disable gadgets (legacy attack surface).
+"TurnOffUnsignedGadgets"=dword:00000001 ; Disallow unsigned (belt & suspenders).
+"TurnOffUserInstalledGadgets"=dword:00000001 ; No user gadgets.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Assistance\Client\1.0]
+"NoActiveHelp"=dword:00000001 ; Disable help suggestions.
+"NoExplicitFeedback"=dword:00000001 ; No explicit feedback.
+"NoImplicitFeedback"=dword:00000001 ; No telemetry feedback.
+"NoOnlineAssist"=dword:00000001 ; No online help.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\DisallowRun]
+"1"="mshta.exe" ; Block HTML Application host (HTA) per user (nice phishing mitigation).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Feeds]
+"ShellFeedsTaskbarViewMode"=dword:00000002 ; Hide News & Interests/feeds.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\GameDVR]
+"AppCaptureEnabled"=dword:00000000 ; Disable capture (duplicate).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings]
+"AutoDetect"=dword:00000000 ; Disable WPAD.
+"CertificateRevocation"=dword:00000001 ; Check revocation.
+"DisableCachingOfSSLPages"=dword:00000001 ; Don’t cache HTTPS.
+"DisableSSL3Fallback"=dword:00000001 ; No SSLv3 fallback (legacy).
+"EnableAutoproxyResultCache"=dword:00000000 ; No auto-proxy cache.
+"PCT1Disable"=dword:00000001 ; Disable PCT 1.0 (legacy).
+"SSL2Disable"=dword:00000001 ; Disable SSL 2.0 (legacy).
+"SSL3FallbackDisabled"=dword:00000001 ; Disable fallback (legacy).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Maps]
+"AutoUpdateEnabled"=dword:00000000 ; No offline map auto-updates.
+"DownloadOnMeteredConnections"=dword:00000000 ; Don’t use metered.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Associations]
+"DefaultFileTypeRisk"=dword:00001808 ; Safer attachment handling level.
+"LowRiskFileTypes"="" ; No low-risk list.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments]
+"DefaultFileTypeRisk"=dword:00000400 ; Risk level config.
+"HideZoneInfoOnProperties"=dword:00000000 ; Show MotW.
+"LowRiskFileTypes"="" ; No bypass list.
+"SaveZoneInformation"=dword:00000001 ; Keep MotW.
+"ScanWithAntiVirus"=dword:00000003 ; Force AV scanning on open+save.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
+"ClearRecentDocsOnExit"=dword:00000001 ; Clear Recent on logoff.
+"ConfirmFileDelete"=dword:00000001 ; Confirm deletes.
+"DisableThumbnails"=dword:00000001 ; No thumbnails.
+"DisableThumbnailsOnNetworkFolders"=dword:00000001 ; No thumbs on shares.
+"NoAddNetworkPlace"=dword:00000001 ; Block Add Network Place.
+"NoCDBurning"=dword:00000001 ; Disable shell CD burning.
+"NoDriveAutoRun"=dword:ffffffff ; Disable AutoRun on all drives.
+"NoDriveTypeAutoRun"=dword:000000ff ; Disable AutoPlay/Run types.
+"NoInternetOpenWith"=dword:00000001 ; Don’t query internet for file associations.
+"NoLowDiskSpaceChecks"=dword:00000001 ; Suppress low disk prompts.
+"NoNetConnectDisconnect"=dword:00000000 ; Hide connect/disconnect 1.
+"NoNetCrawling"=dword:00000001 ; Don’t crawl for network folders.
+"NoNewAppAlert"=dword:00000001 ; No “new app” alerts.
+"NoOnlinePrintsWizard"=dword:00000001 ; Disable online prints.
+"NoPublishingWizard"=dword:00000001 ; Disable publish web wizard.
+"NoRecentDocsHistory"=dword:00000001 ; No history.
+"NoRecentDocsNetHood"=dword:00000001 ; Don’t add network docs to history.
+"NoResolveSearch"=dword:00000001 ; Don’t search internet for file names.
+"NoResolveTrack"=dword:00000001 ; Don’t resolve link targets via search.
+"NoRestorePoints"=dword:00000000 ; Hide System Restore UI 1.
+"NoShare"=dword:00000000 ; Hide sharing UI 1.
+"NoSharing"=dword:00000000 ; Disable sharing UI 1.
+"NoStartMenuMFUprogramsList"=dword:00000001 ; Hide “Most used”.
+"NoStartMenuSubFolders"=dword:00000000 ; Hide classic subfolders 1.
+"NoThumbnailCache"=dword:00000001 ; No cache creation.
+"NoUseStoreOpenWith"=dword:00000001 ; Don’t suggest Store apps.
+"NoWebServices"=dword:00000001 ; Disable web services in shell.
+"RemoveSharedDocuments"=dword:00000001 ; Hide Public folders.
+"Start_TrackDocs"=dword:00000000 ; Don’t track docs.
+"Start_TrackProgs"=dword:00000000 ; Don’t track programs.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Privacy]
+"ActivityFeedEnabled"=dword:00000000 ; Disable activity history.
+"CrossDevice"=dword:00000000 ; No cross-device.
+"TailoredExperiencesWithDiagnosticDataEnabled"=dword:00000000 ; No tailored exp.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy]
+"HasAccepted"=dword:00000000 ; Don’t accept online speech terms.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Conferencing]
+"NoRDS"=dword:00000001 ; Block Remote Desktop sharing in legacy conf.
+"NoChat"=dword:00000001 ; Block chat (legacy).
+"NoReceivingFiles"=dword:00000001 ; Block file receive (legacy).
+"NoSendingFiles"=dword:00000001 ; Block file send (legacy).
+"NoAutoAcceptCalls"=dword:00000001 ; No auto accept.
+"NoWebDirectory"=dword:00000001 ; No web directory.
+"NoDirectoryServices"=dword:00000001 ; No directory services.
+"NoChangingCallMode"=dword:00000001 ; Lock call mode.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Control Panel\Desktop]
+"ScreenSaveActive"="1" ; Enforce screensaver.
+"ScreenSaverIsSecure"="1" ; Require password.
+"ScreenSaveTimeOut"="900" ; 15 minutes.
+"SCRNSAVE.EXE"="C:\\Windows\\System32\\scrnsave.scr" ; Blank saver.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Control Panel\International\Calendars\TwoDigitYearMax]
+"1"="2029" ; Two-digit year cutoff (legacy regional setting).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge]
+"AlternateErrorPagesEnabled"=dword:00000000 ; No Alt error pages (privacy).
+"StartupBoostEnabled"=dword:00000000 ; Disable background preload.
+"SmartScreenPuaEnabled"=dword:00000001 ; **Blocks PUA SmartScreen** (consider 1 for protection).
+"DownloadRestrictions"=dword:00000002 ; 2=Block dangerous downloads.
+"RendererCodeIntegrityEnabled"=dword:00000001 ; Enforce renderer CI.
+"HideFirstRunExperience"=dword:00000001 ; Skip FRX.
+"SmartScreenEnabled"=dword:00000001 ; SmartScreen on (good).
+"BlockThirdPartyCookies"=dword:00000001 ; 3P cookies off.
+"SearchSuggestEnabled"=dword:00000000 ; No search suggestions.
+"ConfigureDoNotTrack"=dword:00000001 ; Send DNT=1.
+"EnableTrackingPrevention"=dword:00000001 ; TP on.
+"TrackingPrevention"=dword:00000003 ; 3=Strict.
+"PasswordManagerEnabled"=dword:00000000 ; No built-in PW manager.
+"AutofillAddressEnabled"=dword:00000000 ; No address autofill.
+"AutofillCreditCardEnabled"=dword:00000000 ; No card autofill.
+"BackgroundModeEnabled"=dword:00000000 ; No background keep-alive.
+"DnsOverHttpsMode"="automatic" ; Auto DoH.
+"HttpsUpgradesEnabled"=dword:00000001 ; Always upgrade to HTTPS.
+"HttpsOnlyMode"="force_balanced_enabled" ; HTTPS-Only (may be build-specific).
+"HardwareAccelerationModeEnabled"=dword:00000001 ; HW accel on.
+"SleepingTabsEnabled"=dword:00000001 ; Sleep tabs (perf).
+"InsecurePrivateNetworkRequestsAllowed"=dword:00000000 ; Block private network request from public pages.
+"PrefetchWithServiceWorkerEnabled"=dword:00000000 ; Disable SW prefetch.
+"WebRtcLocalhostIpHandling"="AllowPublicInterfaceOnly" ; Obscure local IP.
+"EnhanceSecurityMode"="StrictMode" ; Strict security mode (Edge ESM).
+"DefaultNotificationsSetting"=dword:00000002 ; 2=Block notifications.
+"SyncDisabled"=dword:00000001 ; Disable browser sync.
+"QuicAllowed"=dword:00000000 ; QUIC off.
+"PaymentMethodQueryEnabled"=dword:00000000 ; No PaymentHandler query.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge\ExtensionInstallBlocklist]
+"1"="*" ; Block all extensions (use Allowlist to permit specific ones).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\IME\Shared]
+"SearchPlugin"=dword:00000000 ; No IME search plugin.
+"UserDict"=dword:00000000 ; Don’t upload user dict.
+"misconvlogging"=dword:00000000 ; No IME conv logging.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\IME\IMEJP]
+"UseHistorybasedPredictiveInput"=dword:00000000 ; Disable predictive.
+"SaveAutoTuneDataToFile"=dword:00000000 ; Don’t save tuning.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\InputMethod\Settings\Shared]
+"EnableCloudCandidate"=dword:00000000 ; No cloud candidates.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\InputPersonalization]
+"RestrictImplicitTextCollection"=dword:00000001 ; See above.
+"RestrictImplicitInkCollection"=dword:00000001 ; See above.
+"AllowInputPersonalization"=dword:00000000 ; Disable personalization.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\BrowserEmulation]
+"DisableSiteListEditing"=dword:00000001 ; Lock site list (admin-managed).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\BrowserStorage\AppCache]
+"AllowWebsiteCaches"=dword:00000000 ; Disable AppCache.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\BrowserStorage\IndexedDB]
+"AllowWebsiteDatabases"=dword:00000000 ; Disable IndexedDB (IE only).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\CaretBrowsing]
+"Enabled"=dword:00000000 ; Keep caret browsing off.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\CommandBar]
+"CommandBarEnabled"=dword:00000001 ; Command bar allowed.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Control Panel]
+"HomePage"=dword:00000000 ; Don’t lock.
+"Proxy"=dword:00000000
+"SecurityTab"=dword:00000000
+"PrivacyTab"=dword:00000000
+"AdvancedTab"=dword:00000000
+"ConnectionsTab"=dword:00000000
+"ProgramsTab"=dword:00000000
+"GeneralTab"=dword:00000000
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\DomainSuggestion]
+"DomainSuggestion"=dword:00000000 ; Disable suggestion.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Download]
+"CheckExeSignatures"="yes" ; Require signed EXEs (IE).
+"RunInvalidSignatures"=dword:00000000 ; Block invalid signatures.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Feed Discovery]
+"Enabled"=dword:00000000 ; Allow discovery (optional)1.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Feeds]
+"BackgroundSyncStatus"=dword:00000000 ; No background RSS sync.
+"DisableFeedPane"=dword:00000001 ; Hide feed pane.
+"DisableAddRemove"=dword:00000001 ; Lock feeds.
+"DisableEnclosureDownload"=dword:00000001 ; Block enclosure downloads.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\FlipAhead]
+"Enabled"=dword:00000000 ; Off.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Geolocation]
+"PolicyDisableGeolocation"=dword:00000001 ; Block geo (IE).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Hta]
+"DisableHTMLApplication"=dword:00000001 ; Disable HTA in IE.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\IEDevTools]
+"Disabled"=dword:00000001 ; Disable F12 tools (IE).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Infodelivery\Restrictions]
+"UsePolicySearchProvidersOnly"=dword:00000001 ; Lock search providers.
+"NoChannelUI"=dword:00000001 ; Hide Channels UI.
+"NoScheduledUpdates"=dword:00000001 ; Stop scheduled updates.
+"NoSubscriptionContent"=dword:00000001 ; No sub content.
+"NoRemovingSubscriptions"=dword:00000001 ; Lock removal.
+"NoChannelLogging"=dword:00000001 ; No logging.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main]
+"DisableFirstRunCustomize"=dword:00000001 ; Skip FRX.
+"Start Page"="about:blank" ; Blank start.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\EnterpriseMode]
+"Enable"=dword:00000000 ; Disable Enterprise Mode list (edge uses own).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_OBJECT_CACHING]
+"iexplore.exe"=dword:00000001 ; Enforce object caching policy.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_ZONE_ELEVATION]
+"iexplore.exe"=dword:00000001 ; Block zone elevation.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MIME_HANDLING]
+"iexplore.exe"=dword:00000001 ; Strict MIME handling.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MIME_SNIFFING]
+"iexplore.exe"=dword:00000001 ; Disable MIME sniffing.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_WINDOW_RESTRICTIONS]
+"iexplore.exe"=dword:00000001 ; Restrict popups/resizing.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_SECURITYBAND]
+"iexplore.exe"=dword:00000001 ; Show security band.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_ADDON_MANAGEMENT]
+"iexplore.exe"=dword:00000001 ; Manage add-ons policy.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_RESTRICT_ACTIVEXINSTALL]
+"iexplore.exe"=dword:00000001 ; Restrict ActiveX install.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_RESTRICT_FILEDOWNLOAD]
+"iexplore.exe"=dword:00000001 ; Restrict file downloads.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_PROTOCOL_LOCKDOWN]
+"iexplore.exe"=dword:00000001 ; Lock protocols.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_DISABLE_MK_PROTOCOL]
+"iexplore.exe"=dword:00000001 ; Disable mk: protocol.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALMACHINE_LOCKDOWN]
+"iexplore.exe"=dword:00000001 ; Local machine zone lockdown.
+"explorer.exe"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALMACHINE_LOCKDOWN\Settings]
+"LOCALMACHINE_CD_UNLOCK"=dword:00000000 ; Don’t unlock CD.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BEHAVIORS]
+"iexplore.exe"=dword:00000001 ; Restrict behaviors.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_CROSS_DOCUMENT_MESSAGING]
+"iexplore.exe"=dword:00000001 ; Restrict XDM.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_XDOMAINREQUEST]
+"iexplore.exe"=dword:00000000 ; Disable XDomainRequest.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_DATAURI]
+"iexplore.exe"=dword:00000001 ; Restrict data: URIs.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\Feature_Enable_Script_Paste_URLAction_If_Prompt]
+"iexplore.exe"=dword:00000000 ; Block script paste on prompt.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\Feature_Enable_Compat_logging]
+"iexplore.exe"=dword:00000000 ; Disable compat logging.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_WEBSOCKET]
+"iexplore.exe"=dword:00000001 ; Allow WebSocket (if needed).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_WEBSOCKET_MAXCONNECTIONSPERSERVER]
+"iexplore.exe"=dword:00000006 ; Cap connections.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER]
+"iexplore.exe"=dword:00000006 ; HTTP/1.1 connections.
+"explorer.exe"=dword:00000006
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER]
+"iexplore.exe"=dword:00000004 ; HTTP/1.0 connections.
+"explorer.exe"=dword:00000004
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\PhishingFilter]
+"EnabledV9"=dword:00000000 ; Disable SmartScreen in IE (consistent with IE deprecation).
+"PreventOverride"=dword:00000001 ; If enabled, block override.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\PrefetchPrerender]
+"Enabled"=dword:00000000 ; Disable prerender (privacy).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Safety\ActiveXFiltering]
+"IsEnabled"=dword:00000001 ; Enable ActiveX filtering.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Security\ActiveX]
+"BlockOutdatedActiveX"=dword:00000001 ; Block outdated ActiveX.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\SQM]
+"DisableCustomerImprovementProgram"=dword:00000001 ; No CEIP.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Suggested Sites]
+"Enabled"=dword:00000000 ; Disable.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\TabbedBrowsing]
+"WarnOnClose"=dword:00000001 ; Warn on close many tabs.
+"RestoreOnCrash"=dword:00000001 ; Restore tabs on crash.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Internet Explorer\Toolbars\Restrictions]
+"NoToolbarCustomization"=dword:00000001 ; Lock toolbar.
+"NoThirdPartyToolbars"=dword:00000001 ; Block third-party toolbars.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Messenger\Client]
+"PreventRun"=dword:00000001 ; Block legacy Messenger.
+"PreventAutoRun"=dword:00000001 ; Block autorun.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Addons]
+"FlashPlayerEnabled"=dword:00000000 ; Legacy Edge Flash off.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\BrowserEmulation]
+"MSCompatibilityMode"=dword:00000001 ; Enable compat mode (legacy Edge).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Extensions]
+"ExtensionsEnabled"=dword:00000000 ; Block legacy Edge extensions.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\F12]
+"Disabled"=dword:00000001 ; Disable F12 (legacy Edge).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Favorites]
+"LockdownFavorites"=dword:00000001 ; Lock favorites.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Internet Settings]
+"ProvisionedHomePages"="about:blank" ; Blank start.
+"PreventCertErrorOverrides"=dword:00000001 ; No cert override.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Main]
+"DoNotTrack"=dword:00000001 ; DNT=1.
+"PreventFirstRunPage"=dword:00000001 ; Skip FRX.
+"AllowPopups"=dword:00000001 ; Allow popups (consider 0 to block).
+"AllowPrinting"=dword:00000001 ; Allow printing.
+"AllowFullScreenMode"=dword:00000001 ; Allow F11.
+"AllowInPrivate"=dword:00000001 ; Allow InPrivate.
+"FormSuggest Passwords"=dword:00000000 ; Disable PW suggestion.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Main\EnterpriseMode]
+"Enable"=dword:00000000 ; No Enterprise Mode (legacy).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\PhishingFilter]
+"EnabledV9"=dword:00000001 ; Disable SmartScreen in legacy Edge.
+"PreventOverride"=dword:00000001 ; Don’t allow override.
+"PreventOverrideAppRepUnknown"=dword:00000001 ; Don’t allow unknown download override.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\ServiceUI]
+"AllowWebContentOnNewTabPage"=dword:00000000 ; No online New Tab.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\TabPreloader]
+"AllowTabPreloading"=dword:00000000 ; Disable preloading.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\MicrosoftEdge\Main]
+"AllowPrelaunch"=dword:00000000 ; Don’t prelaunch (legacy Edge).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\PassportForWork]
+"Enabled"=dword:00000001 ; Enable WHfB for user. **Note:** You set HKLM UseWindowsHelloForBusiness=0 earlier → HKLM wins; choose one consistent posture.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\PreviousVersions]
+"DisableRemotePage"=dword:00000001 ; Hide remote restore points.
+"HideBackupEntries"=dword:00000001 ; Hide backup entries.
+"DisableLocalPage"=dword:00000000 ; Keep local Previous Versions page.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\SoundRecorder]
+"Soundrec"=dword:00000000 ; Enable (policy placeholder).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\TabletPC]
+"PreventHandwritingDataSharing"=dword:00000001 ; Don’t share handwriting data.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration]
+"SyncEnabled"=dword:00000000 ; Disable UEV sync.
+"SyncMethod"="None" ; No sync.
+"PreventOverlappingSynchronization"=dword:00000001 ; Safety.
+"SettingsImportNotifyEnabled"=dword:00000000 ; No prompts.
+"HideSettingsPackagesFolder"=dword:00000001 ; Hide folder.
+"SyncTimeoutInMilliseconds"=dword:000007d0 ; 2s timeout.
+"LogOffWaitInterval"=dword:000007d0 ; 2s wait.
+"CustomerExperienceImprovementProgram"=dword:00000000 ; No CEIP.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.BingFinance_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.BingMaps_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.BingNews_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.BingSports_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.BingTravel_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.BingWeather_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.Reader_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.XboxLIVEGames_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.ZuneMusic_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\UEV\Agent\Configuration\Windows8AppList\Microsoft.ZuneVideo_8wekyb3d8bbwe]
+"SyncSettings"=dword:00000000 ; Don’t roam app.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint]
+"PackagePointAndPrintOnly"=dword:00000001 ; Only package-aware drivers.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows NT\Printers\PointAndPrint]
+"NoWarningNoElevationOnInstall"=dword:00000000 ; Warn+elevate on install.
+"UpdatePromptSettings"=dword:00000000 ; Prompt on update too.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows NT\Terminal Services]
+"DisableConnectionSharing"=dword:00000001 ; No RDP connection sharing.
+"DisablePasswordSaving"=dword:00000001 ; No saved RDP passwords.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\AppCompat]
+"DisableInventory"=dword:00000001 ; Don’t inventory apps (privacy).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\CloudContent]
+"DisableWindowsSpotlightFeatures"=dword:00000001 ; Kill Spotlight.
+"DisableSoftLanding"=dword:00000001 ; No promos.
+"DisableWindowsSpotlightOnSettings"=dword:00000001 ; No tips in Settings.
+"DisableWindowsSpotlightOnActionCenter"=dword:00000001 ; No tips in Action Center.
+"DisableTailoredExperiencesWithDiagnosticData"=dword:00000001 ; No tailored exp.
+"DisableSpotlightCollectionOnDesktop"=dword:00000001 ; No desktop Spotlight.
+"DisableWindowsConsumerFeatures"=dword:00000001 ; **Consider 1** to fully align with HKLM consumer feature disablement.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Control Panel\Desktop]
+"ScreenSaveActive"="1" ; (dup) enforce saver.
+"ScreenSaverIsSecure"="1"
+"ScreenSaveTimeOut"="900"
+"SCRNSAVE.EXE"="C:\\Windows\\System32\\scrnsave.scr"  ; blank saver to force lock.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\CredUI]
+"DisablePasswordReveal"=dword:00000001 ; Hide “eye” button in creds.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\CurrentVersion\AccountNotifications]
+"DisableAccountNotifications"=dword:00000001 ; No AAD/MSA nags.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\CurrentVersion\Explorer\AutoComplete]
+"AutoSuggest"="no" ; Disable address bar/file dialog autosuggest.
+"InlineAutoComplete"="no" ; Disable inline complete.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings]
+"EnableAutoProxyResultCache"=dword:00000000 ; Don’t cache auto-proxy results.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\CurrentVersion\PushNotifications]
+"NoToastApplicationNotificationOnLockScreen"=dword:00000001 ; No lock screen toasts.
+"NoToastApplicationNotification"=dword:00000001 ; Block app toasts per policy.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\HandwritingErrorReports]
+"PreventHandwritingErrorReports"=dword:00000001 ; Don’t send handwriting error data.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Installer]
+"AlwaysInstallElevated"=dword:00000000 ; Don’t allow per-user elevated MSI (good).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\LocationAndSensors]
+"DisableLocation"=dword:00000001 ; Disable location (user).
+"DisableLocationScripting"=dword:00000001 ; Disable script access.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Personalization]
+"NoLockScreenCamera"=dword:00000001 ; Disable camera on lock.
+"NoLockScreenSlideshow"=dword:00000001 ; Disable slideshow on lock.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging]
+"EnableModuleLogging"=dword:00000001 ; Log module-level ops.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames]
+"*"="*"
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging]
+"EnableScriptBlockLogging"=dword:00000001 ; Log script blocks.
+"EnableScriptBlockInvocationLogging"=dword:00000001 ; Log invocations.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\PowerShell\Transcription]
+"EnableTranscripting"=dword:00000001 ; Enable transcripts.
+"EnableInvocationHeader"=dword:00000001 ; Include headers.
+"OutputDirectory"="%USERPROFILE%\\Documents\\PowerShellTranscripts" ; User-writable path.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\PowerShell\UpdatableHelp]
+"EnableUpdateHelpDefaultSourcePath"="C:\\ProgramData\\PSHelp" ; Local help source.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\TabletPC]
+"PreventHandwritingDataSharing"=dword:00000001 ; No handwriting sharing.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Windows Error Reporting]
+"Disabled"=dword:00000001 ; Per-user WER off.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Windows Search\PreventIndexingCertainPaths]
+"1"="%USERPROFILE%\\AppData\\Local\\Temp\\*" ; Exclude temp from index.
+"2"="%USERPROFILE%\\AppData\\Local\\Microsoft\\Windows\\INetCache\\*" ; Exclude cache.
+"3"="%USERPROFILE%\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\Cache\\*" ; Exclude Edge cache.
+"4"="%USERPROFILE%\\AppData\\Local\\CrashDumps\\*"
+"5"="%USERPROFILE%\\AppData\\Local\\Microsoft\\Windows\\WER\\*"
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Windows Error Reporting\Consent]
+"DefaultConsent"=dword:00000001 ; Ask each time (but WER disabled above).
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Windows Search]
+"AllowSearchToUseLocation"=dword:00000000 ; No location for search.
+"DisableWebSearch"=dword:00000001 ; No web search.
+
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\WindowsMediaPlayer]
+"PreventLibrarySharing"=dword:00000001 ; No DLNA sharing.
+"DisableAutomaticUpdates"=dword:00000001 ; No auto updates.
+"DisableMetadataRetrieval"=dword:00000001 ; No internet metadata.
+"PreventCodecDownload"=dword:00000001 ; Don’t fetch codecs automatically.
