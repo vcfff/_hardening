@@ -1,0 +1,2566 @@
+Windows Registry Editor Version 5.00
+;HARDENING NOTES 2025
+;Key references used (Windows 11 24H2/25H2+): Microsoft Security Baseline summaries (24H2→25H2 evolution)
+
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\.NETFramework]
+"OnlyUseLatestCLR"=dword:00000001 ; 1=Force loading the newest installed CLR for all hosts; 0=Allow older CLR if requested (default); can break legacy apps relying on v2/v3.5.
+"SystemDefaultTlsVersions"=dword:00000001 ; 1=Use OS TLS defaults (incl. TLS 1.2/1.3 where supported); 0=App must specify protocols explicitly; improves crypto posture for older apps.
+"UseNewCrossContextDelegateSemantics"=dword:00000001 ; 1=Enable newer remoting delegate semantics; 0=Legacy behavior for older remoting scenarios.
+"UseRandomizedStringHashAlgorithm"=dword:00000001 ; 1=Randomized string hashing (mitigates hash-collision DoS); 0=Deterministic legacy hashing.
+"VerificationCompatibility"=dword:00000000 ; 0=Strict verification (hardened/default); 1=Legacy relaxed verification for backward compatibility.
+"WrapNonExceptionThrows"=dword:00000001 ; 1=Wrap non-CLS exceptions in RuntimeWrappedException (safer interop); 0=Throw non-Exception objects directly.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\.NETFramework\v2.0.50727]
+"SchUseStrongCrypto"=dword:00000001 ; 1=Prefer strong cipher suites/protocols; 0=Permit legacy/weak crypto.
+"SystemDefaultTlsVersions"=dword:00000001 ; 1=Use OS TLS defaults; 0=Require explicit SslProtocols in code.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\.NETFramework\v4.0.30319]
+"SchUseStrongCrypto"=dword:00000001 ; 1=Prefer strong cipher suites/protocols; 0=Permit legacy/weak crypto.
+"SystemDefaultTlsVersions"=dword:00000001 ; 1=Use OS TLS defaults; 0=Require explicit SslProtocols in code.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Cryptography\Wintrust\Config]
+"EnableCertPaddingCheck"="1" ; Type=REG_SZ here; typically REG_DWORD. 1=Enforce Authenticode padding check (mitigation for signature padding abuse); 0=Do not enforce.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\FTH]
+"Enabled"=dword:00000000 ; Fault Tolerant Heap (global). 0=Disabled (better perf, less crash mitigation); 1=Enabled (more compatibility).
+"Enabled32"=dword:00000000 ; Same for 32-bit apps. 0=Disabled; 1=Enabled.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Ole]
+"ActivationAuthenticationLevel"=dword:00000005 ; DCOM auth level: 0=Default,1=None,2=Connect,3=Call,4=Pkt,5=PktIntegrity,6=PktPrivacy (encrypt). 5=enforce integrity.
+"ActivationFailureLoggingLevel"=dword:00000001 ; 0=None; 1=Basic logging; (higher values may increase verbosity if supported).
+"LegacyAuthenticationLevel"=dword:00000005 ; Legacy DCOM auth: same scale as above; 5=PktIntegrity.
+"LegacyImpersonationLevel"=dword:00000003 ; Impersonation level: 1=Anonymous,2=Identify,3=Impersonate,4=Delegate. 3=Impersonate (common default).
+"RequireIntegrityActivationAuthenticationLevel"=dword:00000001 ; 1=Require integrity-level activation/auth (DCOM hardening); 0=Not required.
+"RpcUseTcpOnly"=dword:00000001 ; 1=Force RPC over TCP only (blocks Named Pipes/other protocols); 0=Allow multiple transports.
+"EnableDCOM"="N" ; String flag. "Y"=Enable DCOM (recommended for most scenarios); "N"=Disable DCOM (breaks many COM/WMI/remote features).
+"MachineAccessRestriction"=hex:01,00,04,80,bc,00,00,00,ac,00,00,00,00,00,00,00 ; Binary security descriptor defining default DCOM access ACL; edit only if you know the SIDs/ACEs impact.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Ole\AppCompat]
+"RequireIntegrityActivationAuthenticationLevel"=dword:00000001 ; 1=Enforce integrity requirements at app-compat layer; 0=Do not enforce.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\AboveLock\AllowCortanaAboveLock]
+"value"=dword:00000000 ; 0=Block Cortana voice above lock (hardened); 1=Allow (default). Scanner-friendly privacy hardening. (Policy CSP: AboveLock/AllowCortanaAboveLock)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Bluetooth\AllowAdvertising]
+"value"=dword:00000000 ; 0=Block BLE advertising (privacy); 1=Allow (default). May reduce proximity-based experiences but doesn’t stop normal pairing. (CSP: Bluetooth/AllowAdvertising)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Bluetooth\AllowDiscoverableMode]
+"value"=dword:00000000 ; 0=Not discoverable (privacy); 1=Discoverable (default). PC can still pair TO peripherals; other devices won’t see the PC. (CSP: Bluetooth/AllowDiscoverableMode)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Bluetooth\AllowPrepairing]
+"value"=dword:00000000 ; 0=Disallow auto pre-pairing of bundled BT devices (hardened); 1=Allow (default). (CSP: Bluetooth/AllowPrepairing)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Bluetooth\AllowPromptedProximalConnections]
+"value"=dword:00000000 ; 0=Block Swift Pair / proximity pairing (users must pair via Settings); 1=Allow (default). (CSP: Bluetooth/AllowPromptedProximalConnections)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Connectivity\AllowBluetooth]
+"value"=dword:00000002 ; 2=Allow Bluetooth (default, radio usable); 0=Disallow (radio disabled/greyed). Keeps BT functional while other privacy locks stay in place. (CSP: Connectivity/AllowBluetooth)
+
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Connectivity\AllowVPNOverCellular]
+"value"=dword:00000001 ; 1=Allow VPN over cellular (default/functional); 0=Block (harder stance for cost/attack-surface). Consider 0 on devices with no mobile data need.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\Bluetooth]
+"AllowAdvertising"=dword:00000000 ; 0=Block BLE advertising (privacy); 1=Allow (default). Reduces proximity tracking.
+"AllowPrepairing"=dword:00000000 ; 0=Disallow automatic pre-pairing (hardened); 1=Allow (default).
+"AllowPromptedProximalConnections"=dword:00000000 ; 0=Block Swift Pair/proximity prompts (hardened); 1=Allow (default).
+"BluetoothAllowedServices"="00001101-0000-1000-8000-00805F9B34FB" ; Allowed service list (SPP only here). Highly restrictive—may break audio/HID. Use a minimal allowlist that still fits your use-cases.
+; "BluetoothAllowedServices"="00001124-0000-1000-8000-00805F9B34FB;0000110B-0000-1000-8000-00805F9B34FB;0000111E-0000-1000-8000-00805F9B34FB" ; (EXAMPLE) HID + A2DP Sink + Hands-Free (semicolon-separated). Tight but functional for keyboard/mouse/audio.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\Browser]
+"AllowFlash"=dword:00000000 ; 0=Block Flash (deprecated tech; hardened); 1=Allow (not recommended).
+"EnterpriseModeSiteList"="" ; IE Enterprise Mode list (legacy). For Edge hardening, see commented policies below.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Edge] ; (SUGGESTED) Modern Edge policies (uncomment to apply)
+ "SmartScreenEnabled"=dword:00000001 ; 1=Enable Microsoft Defender SmartScreen; 0=Disable.
+ "BlockThirdPartyCookies"=dword:00000001 ; 1=Block third-party cookies; 0=Allow.
+ "PasswordManagerEnabled"=dword:00000000 ; 0=Disable built-in password manager; 1=Enable (usability).
+ "QuicAllowed"=dword:00000000 ; 0=Disable QUIC (harden); 1=Allow (perf).
+ "SSLVersionMin"="tls1.3" ; Minimum TLS version for Edge. Options: "tls1.0"…"tls1.3".
+ "DnsOverHttpsMode"="secure" ; "off"|"automatic"|"secure". Consider "secure" if you manage a DoH resolver.
+ "BackgroundModeEnabled"=dword:00000000 ; 0=Disallow background mode; 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\Connectivity]
+"AllowVPNOverCellular"=dword:00000001 ; 1=Allow; 0=Block. Duplicate of the Connectivity key above—kept consistent.
+"DisableIPv6"=dword:00000001 ; 0=Keep IPv6 enabled (recommended for modern networks); 1=Disable IPv6 (not recommended; may break services).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\DeviceGuard]
+"EnableVirtualizationBasedSecurity"=dword:00000001 ; 1=Enable VBS; 0=Disable. Improves isolation/hardening (requires virtualization/Secure Boot).
+"RequirePlatformSecurityFeatures"=dword:00000003 ; 1=Secure Boot; 2=DMA Protection; 3=Both. 3=hardened default for new hardware.
+"SecureLaunchConfiguration"=dword:00000001 ; 1=Enable Secure Launch (DRTM/SG) if supported; 0=Disable.
+"VirtualizationBasedSecurityReady"=dword:00000001 ; Readiness flag (Windows-managed). Typically reflects capability/state.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CI\Policy]
+"HVCIEnabled"=dword:00000001 ; 1=Hypervisor-Enforced Code Integrity ON; 0=OFF. (May impact legacy drivers/perf.)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\FindMyDevice]
+"AllowFindMyDevice"=dword:00000000 ; 0=Disable device tracking (privacy/hardening); 1=Enable (consumer convenience).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\LanmanWorkstation]
+"AllowInsecureGuestAuth"=dword:00000000 ; 0=Disallow guest SMB auth (hardened); 1=Allow (weak; not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\Start]
+"AllowPinnedFolderDocuments"=dword:00000000 ; 0=Hide Docs; 1=Show.
+"AllowPinnedFolderDownloads"=dword:00000000 ; 0=Hide Downloads; 1=Show.
+"AllowPinnedFolderFileExplorer"=dword:00000000 ; 0=Hide File Explorer; 1=Show.
+"AllowPinnedFolderHomeGroup"=dword:00000000 ; 0=Hide HomeGroup (legacy); 1=Show.
+"AllowPinnedFolderMusic"=dword:00000000 ; 0=Hide Music; 1=Show.
+"AllowPinnedFolderNetwork"=dword:00000000 ; 0=Hide Network; 1=Show.
+"AllowPinnedFolderPersonalFolder"=dword:00000000 ; 0=Hide Personal folder; 1=Show.
+"AllowPinnedFolderPictures"=dword:00000000 ; 0=Hide Pictures; 1=Show.
+"AllowPinnedFolderVideos"=dword:00000000 ; 0=Hide Videos; 1=Show.
+"IrisRecommendations"=dword:00000000 ; 0=Disable Start recommendations; 1=Enable.
+"JumpListItems"=dword:00000000 ; 0=No recent items in Jump Lists; N>0=Max count.
+"NotifyNewApps"=dword:00000000 ; 0=Disable “New apps” notifications; 1=Enable.
+"TrackDocs"=dword:00000000 ; 0=Don’t track recently opened docs; 1=Track.
+"TrackProgs"=dword:00000000 ; 0=Don’t track recently opened programs; 1=Track.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\WindowsDefenderSecurityCenter]
+"DisableNotifications"=dword:00000000 ; 1=Disable WDSC notifications (quiet but less visibility); 0=Enable. For audits, consider 0 to surface alerts.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\device\WirelessDisplay]
+"AllowProjectionToThisPC"=dword:00000000 ; 0=Block Miracast/Wireless Display as a receiver (reduces attack surface); 1=Allow.
+"AllowUserInputFromWirelessDisplayReceiver"=dword:00000000 ; 0=Block input from the receiver; 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Experience\AllowThirdPartySuggestionsInWindowsSpotlight]
+"value"=dword:00000000 ; 0=Block third-party Spotlight suggestions/ads (privacy/hardening); 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Experience\AllowWindowsConsumerFeatures]
+"value"=dword:00000000 ; 0=Disable consumer/bundled experiences, promos, and suggestions; 1=Enable (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Experience\AllowWindowsSpotlight]
+"value"=dword:00000000 ; 0=Disable Windows Spotlight globally (lock screen/Bing content); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Experience\AllowWindowsSpotlightOnActionCenter]
+"value"=dword:00000000 ; 0=No Spotlight suggestions in Action Center; 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Experience\AllowWindowsSpotlightOnSettings]
+"value"=dword:00000000 ; 0=No Spotlight suggestions inside Settings pages; 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Experience\AllowWindowsSpotlightWindowsWelcomeExperience]
+"value"=dword:00000000 ; 0=Disable “Windows welcome experience” post-update tips/promos; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\HumanPresence\ForceInstantDim]
+"value"=dword:00000000 ; 0=Do not enforce instant dim (follows user/device defaults); 1=Force instant dim on “away”.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\HumanPresence\ForceInstantLock]
+"value"=dword:00000001 ; 0=Do not enforce instant lock; 1=Force instant lock when user is “away” (stronger security).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\HumanPresence\ForceInstantWake]
+"value"=dword:00000000 ; 0=Do not force wake on “presence” (quieter/privacy); 1=Force instant wake on approach.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\NearbySharing\AllowNearbySharing]
+"value"=dword:00000000 ; 0=Disable Nearby Sharing entirely (harden); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Privacy\DisableAdvertisingId]
+"value"=dword:00000001 ; 0=Advertising ID enabled (less private); 1=Disable Advertising ID (recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Privacy\LetAppsActivateWithVoice]
+"value"=dword:00000000 ; 0=Block voice activation for apps; 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Privacy\LetAppsActivateWithVoiceAboveLock]
+"value"=dword:00000000 ; 0=Block voice activation above lock; 1=Allow (less secure).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Settings\AllowDynamicLock]
+"value"=dword:00000000 ; 0=Disable Dynamic Lock (phone-proximity auto-lock); 1=Enable (often *more* secure if used with BT/phone).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\Speech\AllowSpeechModelUpdate]
+"value"=dword:00000000 ; 0=Block speech model updates (privacy); 1=Allow (better dictation quality).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\System\AllowCrossDeviceClipboard]
+"value"=dword:00000000 ; 0=Disable cross-device/Cloud Clipboard sync (privacy); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\System\EnableCdp]
+"value"=dword:00000000 ; 0=Disable Microsoft “Cross-Device” platform; 1=Enable (cloud sharing/hand-off).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\System\EnableNearShare]
+"value"=dword:00000000 ; 0=Disable Near Share (harden); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\System\Experimentation]
+"value"=dword:00000000 ; 0=Opt-out of A/B/experimentation toggles; 1=Allow (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowAutoConnectToWiFiSenseHotspots]
+"value"=dword:00000000 ; 0=Block auto-connect to suggested/open hotspots (harden); 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowInternetSharing]
+"value"=dword:00000000 ; 0=Disable Internet Connection Sharing/Mobile hotspot; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowRandomizationOfHardwareAddresses]
+"value"=dword:00000001 ; 1=Enable MAC randomization (recommended); 0=Disable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowWiFiDirect]
+"value"=dword:00000001 ; 1=Allow Wi-Fi Direct (required by some Miracast/workflows); 0=Block (more secure if not needed).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowWiFiHotSpotReporting]
+"value"=dword:00000000 ; 0=Disable hotspot reporting; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowWiFiHotspotReporting]
+"value"=dword:00000000 ; Duplicate/casing variant seen in some builds—keep one canonical key; 0=Disable reporting.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WiFi\AllowWiFiSense]
+"value"=dword:00000000 ; 0=Disable Wi-Fi Sense features (recommended); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PolicyManager\current\WirelessDisplay\AllowProjectionToPC]
+"value"=dword:00000000 ; 0=Block acting as Miracast receiver; 1=Allow (bigger surface).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PowerShell\1\PowerShellEngine]
+"EnablePowerShellV2"=dword:00000000 ; 0=Disable PS v2 engine (recommended for security); 1=Enable PS v2 (legacy/less secure).
+"EnableConsoleSessionReuse"=dword:00000000 ; 0=Do not reuse console sessions (slightly noisier, fewer cross-session artifacts); 1=Reuse console sessions (convenience).
+"PSConsoleHostReadLineHistorySaveStyle"="SaveNothing" ; History persistence: "SaveAll"|"SaveIncrementally"|"SaveNothing" (most private).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell]
+"ExecutionPolicy"="AllSigned" ; Script policy: "Restricted"|"RemoteSigned"|"AllSigned"|"Bypass"|"Undefined"|"Unrestricted"; AllSigned=most secure for unsigned scripts.
+"ConsolePrompting"=dword:00000000 ; 0=No legacy console prompting for credentials (safer); 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\PowerShell\3\PowerShellEngine]
+"EnableConsoleSessionReuse"=dword:00000000 ; 0=No reuse (privacy); 1=Reuse.
+"PSConsoleHostReadLineConsoleHistorySaveStyle"="SaveNothing" ; Don't write interactive history for PSReadLine in this engine.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Siuf\Rules]
+"PeriodInNanoSeconds"=dword:00000000 ; Feedback prompt cadence window; 0 + count=0 → effectively disables prompts.
+"NumberOfSIUFInPeriod"=dword:00000000 ; Number of feedback prompts in the period; 0=none.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\SystemCertificates\AuthRoot\Certificates]
+"DisableRootAutoUpdate"=dword:00000000 ; 1=Disable automatic root cert updates (locks trust store; may break some TLS paths); 0=Enable auto-update (more compatibility).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Terminal Server Client]
+"DisableClipboardRedirection"=dword:00000001 ; 1=Block clipboard redirection (client-side); 0=Allow.
+"DisableCredentialsDelegation"=dword:00000001 ; 1=Disable saved creds delegation (safer); 0=Allow.
+"DisablePasswordSaving"=dword:00000001 ; 1=Block saving passwords in RDC UI; 0=Allow.
+"AutoReconnect"=dword:00000000 ; 0=Disable auto-reconnect; 1=Enable (convenience, slightly more surface).
+"Default"=- ; Delete default/MRU entries (privacy cleanup).
+"MRU0"=- ; Delete MRU0 (recent server)…
+"MRU1"=- 
+"MRU2"=- 
+"MRU3"=- 
+"MRU4"=- 
+"MRU5"=- 
+"MRU6"=- 
+"MRU7"=- 
+"MRU8"=- 
+"MRU9"=- 
+"RDGClientTransport"=dword:00000001 ; 1=Use RD Gateway HTTP(S) transport (firewall-friendly, TLS); 0=Legacy transport.
+"RedirectClipboard"=dword:00000000 ; 0=Block clipboard redirect; 1=Allow.
+"RedirectDrives"=dword:00000000 ; 0=Block drive redirect; 1=Allow.
+"RedirectPrinters"=dword:00000000 ; 0=Block printer redirect; 1=Allow.
+"RedirectSmartCards"=dword:00000000 ; 0=Block smart card redirect (safer if not needed); 1=Allow.
+"SavePassword"=dword:00000000 ; 0=Don’t save passwords; 1=Allow saving (weaker).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\WBEM\CIMOM]
+"AllowAnonymousCallback"=dword:00000000
+"AutostartWin9x"=dword:00000000 ; Legacy switch (ignored on modern Windows; harmless).
+"DefaultSecuredHost"=dword:00000001 ; 1=Secure default host context for WMI; 0=Less strict (not recommended).
+"EnableAnonAccess"=dword:00000000 ; 0=Disallow anonymous access to WMI; 1=Allow (weak).
+"EnableAnonEnum"=dword:00000000 ; 0=Disallow anonymous enumeration; 1=Allow (weak).
+"Logging"=dword:00000001 ; 1=Enable WMI provider/service logging; 0=Disable.
+"EnableEvents"=dword:00000001 ; 0=Disable WMI eventing (reduces surface but breaks consumers relying on events); 1=Enable.
+"Repository Directory"="repository" ; Default WMI repo folder; usually leave as default.
+"TempDir"="%systemdrive%\\_temp\\wbem\\logs" ; Custom temp/log path; ensure ACLs restrict non-admins.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\WcmSvc\wifinetworkmanager\config]
+"AutoConnectAllowedOEM"=dword:00000000 ; 0=OEM autobind/connect disallowed (hardening); 1=Allow.
+"WiFiSenseAllowed"=dword:00000000 ; 0=Disable Wi-Fi Sense; 1=Enable.
+"AllowAutoConnectToWiFiSenseHotspots"=dword:00000000 ; 0=Block auto-connect to suggested/open hotspots; 1=Allow.
+"AllowWiFiHotSpotReporting"=dword:00000000 ; 0=Disable hotspot reporting; 1=Enable.
+"AutoSwitch"=dword:00000000 ; 0=Do not auto-switch between known networks (stability, privacy); 1=Auto-switch.
+"MeteredNetworkCost"=dword:00000002 ; Set network cost hint: 0/1=Unrestricted, 2=Fixed (metered), 3=Variable; metered reduces background usage.
+"WiFISenseCredShared"=dword:00000000 ; 0=Don’t share Wi-Fi creds; 1=Allow sharing.
+"WiFISenseOpen"=dword:00000000 ; 0=Disable connecting to open Wi-Fi via Wi-Fi Sense; 1=Enable.
+
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\AeDebug]
+"Auto"=dword:00000000 ; 0=Disable JIT debugging (recommended on hardened hosts); 1=Enable (spawns debugger on crash).
+"UserDebuggerHotKey"=dword:00000000 ; 0=Disable Ctrl+Break hotkey for JIT attach; 1=Enable.
+"Debugger"="" ; Empty = no custom debugger command line (safe default). Non-empty runs a debugger (e.g., vsjitdebugger).
+"ForceQueue"=dword:00000001 ; 1=Queue error reports instead of interactive prompts (quieter); 0=Prompt.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Diagnostics]
+;"GPSvcDebugLevel"=dword:00030002 ; Verbose Group Policy logging (use for troubleshooting; turn off in steady state for noise/perf).
+"PCHealth"=dword:00000000 ; 0=Disable legacy PC Health (obsolete on modern Windows); 1=Enable.
+"DisableLogonBackgroundImage"=dword:00000001 ; Cosmetic, can slightly reduce distraction.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\EUDC]
+"EnableEUDC"=dword:00000000 ; 0=Disable user-defined fonts (EUDC) system-wide (recommended security); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options]
+"MitigationOptions"=hex(03):00,00,00,00,00,10,00,00 ; Global IFEO mitigations blob (use cautiously; prefer per-image subkeys or Exploit Protection).
+"DisableExceptionChainValidation"=dword:00000000 ; 0=Keep SafeSEH/chain validation enabled (recommended); 1=Disable (not recommended).
+"DisableWerFault"=dword:00000001 ; 1=Disable Windows Error Reporting via IFEO (nonstandard); prefer policy at WER hive (see suggestions).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile]
+"GpuPriority"=dword:00000008 ; 8=High GPU priority for multimedia (perf tweak; no security impact).
+"NetworkThrottlingIndex"=dword:ffffffff ; 0xffffffff=Disable network throttling for multimedia scenarios (perf tweak).
+"SFIOPriority"=dword:00000001 ; 1=High SFIO priority for multimedia I/O (perf tweak).
+"SystemResponsiveness"=dword:00000000 ; 0=Favors foreground apps/low latency (perf tweak).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\NetworkList\DefaultMediaCost]
+"3G"=dword:00000002 ; 2=Metered (limits background activity).
+"4G"=dword:00000002 ; 2=Metered.
+"5G"=dword:00000002 ; 2=Metered.
+"Cellular"=dword:00000002 ; 2=Metered (catch-all).
+"Default"=dword:00000001 ; 1=Unrestricted (non-metered) default for unknown types.
+"Ethernet"=dword:00000001 ; 1=Unrestricted.
+"WiFi"=dword:00000001 ; 1=Unrestricted (set 2 to be conservative).
+"Unidentified"=dword:00000002 ; 1=Unrestricted (consider 2=Metered for security/containment).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance]
+"MaintenanceDisabled"=dword:00000001 ; 1=Disable Automatic Maintenance (reduces background tasks, but can delay maintenance/updates); 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Windows]
+"AppInit_DLLs"="" ; Empty list (recommended). Any DLLs here load into most processes — security risk.
+"DisableATMFD"=dword:00000001 ; 1=Disable legacy Type Manager font driver (historic vulns); may be ignored on newer builds where removed.
+"LoadAppInit_DLLs"=dword:00000000 ; 0=Do not load AppInit DLLs system-wide (recommended); 1=Load (not recommended).
+"RequireSignedAppInit_DLLs"=dword:00000001 ; 1=Require signed AppInit DLLs if loading is enabled; 0=Allow unsigned (not recommended).
+"DeviceNotSelectedTimeout"=dword:00000000 ; 0=No printer device selection timeout (legacy). Typically harmless.
+"LegacyDefaultPrinterMode"=dword:00000001 ; 1=Use per-machine default printer behavior; 0=“Last used” per-user (not desired in enterprises).
+"DisableMSI"=dword:00000001 ; 1=Disable Windows Installer for non-managed apps (tighten install surface); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon]
+"AutoAdminLogon"="0" ; "0"=Disabled (recommended); "1"=Auto-logon enabled (unsafe).
+"CachedLogonsCount"="0" ; "0"=Do not cache credentials (strong); N>0=caches last N logons (more usable offline, less secure).
+"DeleteRoamingCache"=dword:00000001 ; 1=Delete locally cached roaming profiles at logoff (privacy/space); 0=Keep.
+"DisableCAD"=dword:00000000 ; 0=Require Ctrl+Alt+Del (recommended); 1=Don’t require.
+"EnableFirstLogonAnimation"=dword:00000000 ; 0=Disable first-logon animation (faster, less noise); 1=Enable.
+"GpNetworkStartTimeoutPolicyValue"=dword:0000003c ; 60s network wait for GP processing (enterprise default).
+"ScRemoveOption"="1" ; Smart card removal: "0"=No action, "1"=Lock workstation (recommended), "2"=Logoff.
+"SFCDisable"=dword:00000000 ; 0=System File Checker ON (recommended); non-zero disables (unsafe).
+"ShutdownWithoutLogon"=dword:00000000 ; 0=Remove shutdown button on logon screen.
+"PasswordExpiryWarning"=dword:0000000e ; Warn users 14 days before password expiry.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows Script Host\Settings]
+"Enabled"=dword:00000000 ; 0=Disable WSH (blocks .vbs/.js — strong hardening, may break scripts); 1=Enable.
+"UseWINSAFER"=dword:00000001 ; 1=Honor Software Restriction Policies for scripts (extra control).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo]
+"Enabled"=dword:00000000 ; 0=Disable Advertising ID OS-wide (privacy/hardening); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\AppModelUnlock]
+"AllowAllTrustedApps"=dword:00000000 ; 0=Block sideloading of trusted (signed) apps (hardened); 1=Allow sideloading (Developer Mode).
+"AllowDevelopmentWithoutDevLicense"=dword:00000000 ; 0=Developer Mode OFF; 1=Developer Mode ON (less secure).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{2135f72a-90b5-4ed3-a7f1-8bb705ac276a}]
+"Disabled"=dword:00000001 ; Picture Password provider → 1=Hide/disable this sign-in method; 0=Enable. (GUID maps to Picture Logon). :contentReference[oaicite:0]{index=0}
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{D6886603-9D2F-4EB2-B667-1971041FA96B}]
+"Disabled"=dword:00000001 ; Windows Hello PIN provider (hide PIN). :contentReference[oaicite:2]{index=2}
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{BEC09223-B018-416D-A0AC-523971B639F5}]
+"Disabled"=dword:00000001 ; Windows Hello Fingerprint provider (hide fingerprint). :contentReference[oaicite:3]{index=3}
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{8AF662BF-65A0-4D0A-A540-A338A999D36F}]
+"Disabled"=dword:00000001 ; Windows Hello Face provider (hide face recognition). :contentReference[oaicite:4]{index=4}
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\activity]
+"Value"="Deny" ; Activity history / timeline: "Deny"=Block; "Allow"=Permit app access.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics]
+"Value"="Deny" ; App diagnostics (read other apps’ info): "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appointments]
+"Value"="Deny" ; Calendar/appointments: "Deny"=Block; "Allow"=Permit (UWP apps only).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\bluetoothSync]
+"Value"="Deny" ; Bluetooth sync: "Deny"=Apps cannot sync via BT; "Allow"=Permit. (Does not disable BT radio itself.)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess]
+"Value"="Deny" ; Broad file system access (UWP): "Deny"=Block elevated FS access; "Allow"=Grant (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat]
+"Value"="Deny" ; Chat/messaging integration: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts]
+"Value"="Deny" ; Contacts: "Deny"=Block people/contacts access; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary]
+"Value"="Deny" ; Documents library: "Deny"=Block; "Allow"=Permit (UWP scoped storage).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\downloadsFolder]
+"Value"="Deny" ; Downloads folder: "Deny"=Block; "Allow"=Permit (per-app consent).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email]
+"Value"="Deny" ; Email access: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\LooselyCoupled]
+"Value"="Deny" ; App-to-app loose coupling: "Deny"=Block cross-app data; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\musicLibrary]
+"Value"="Deny" ; Music library: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCall]
+"Value"="Deny" ; Phone call control: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory]
+"Value"="Deny" ; Phone call history: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary]
+"Value"="Deny" ; Pictures library: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\radios]
+"Value"="Deny" ; Radios (generic): "Deny"=Apps cannot control radios; "Allow"=Permit. (Keep in mind BT/Wi-Fi apps may need this.)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation]
+"Value"="Deny" ; Basic account info (name, pic): "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks]
+"Value"="Deny" ; User data tasks (UWP task lists): "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userNotificationListener]
+"Value"="Deny" ; Read notifications: "Deny"=Block; "Allow"=Permit (affects cross-device notif apps).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary]
+"Value"="Deny" ; Videos library: "Deny"=Block; "Allow"=Permit.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location]
+"Value"="Deny" ; Block location services for apps (strong privacy).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\graphicsCapture]
+"Value"="Deny" ; Block screen/window capture APIs for UWP (prevents silent screen grabs; may affect screen share tools using UWP capture).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\sms]
+"Value"="Deny" ; Block SMS/message access.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Communications]
+"ConfigureChatAutoInstall"=dword:00000000 ; 0=Do not auto-install Chat/Teams consumer; 1=Auto-install (less private).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Device Metadata]
+"PreventDeviceMetadataFromNetwork"=dword:00000001 ; 1=Block downloading device metadata/icons from Internet (privacy); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\DriverSearching]
+"DontPromptForWindowsUpdate"=dword:00000001 ; 1=Don’t prompt to search Windows Update for drivers; 0=Prompt.
+"DriverUpdateWizardWuSearchEnabled"=dword:00000000 ; 0=Wizard won’t search WU; 1=Wizard can search WU.
+"SearchOrderConfig"=dword:00000000 ; 0=Never check WU automatically; 1=Check if not found locally; 2=Always check WU (least private).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Explorer]
+"SmartScreenEnabled"="Warn" ; "Warn"=Warn before running unrecognized apps (recommended); "RequireAdmin"=Require admin; "Off"=Disabled (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize]
+"StartupDelayInMSec"=dword:00000000 ; 0=Disable shell startup delay (faster logon); default ≈12000ms.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Internet Settings]
+"AutoDetect"=dword:00000000 ; 0=Disable WPAD auto-detect (thwarts WPAD attacks); 1=Enable.
+"CertificateRevocation"=dword:00000001 ; 1=Check server cert revocation via CRL/OCSP (recommended); 0=No check.
+"EnableAutoproxyResultCache"=dword:00000000 ; 0=Disable auto-proxy result cache (privacy/consistency); 1=Enable (perf).
+; "WarnOnZoneCrossing"=dword:00000001 ; 1=Warn on zone changes; 0=No warn.
+"DisableCachingOfSSLPages"=dword:00000001 ; 1=Don’t cache HTTPS pages (privacy); 0=Cache (perf).
+"EnablePunycode"=dword:00000001 ; 1=Show punycode to mitigate IDN homograph (if supported on build); 0=Hide.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Internet Settings\HTTP3]
+"Enable"=dword:00000000 ; 0=Disable HTTP/3 (QUIC) for WinINET (smaller surface); 1=Enable (perf/modern sites).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp]
+"DefaultSecureProtocols"=dword:00000a00 ; Bitmask: enable TLS 1.1 (0x0200) + TLS 1.2 (0x0800) for legacy apps using WinHTTP defaults.
+;"DefaultSecureProtocols"=dword:00000a00 ; Also add under WOW6432Node for 32-bit apps.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Associations]
+"DefaultFileTypeRisk"=dword:00001808 ; Risk score baseline used by Windows for file types (higher=more prompts).
+"LowRiskFileTypes"="" ; Empty=don’t whitelist “low risk” types (safer). Listing types here reduces prompts (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments]
+"HideZoneInfoOnProperties"=dword:00000000 ; 0=Show Mark-of-the-Web zone info (recommended); 1=Hide.
+"LaunchProtocolInStartMenu"=dword:00000000 ; 0=Block protocol launch prompts bypass in Start; 1=Allow.
+"LowRiskFileTypes"="" ; Empty=don’t downgrade risk for any extensions (safer).
+"SaveZoneInformation"=dword:00000001 ; 1=Preserve Mark-of-the-Web (MOTW) on files (recommended); 0=Strip.
+"ScanWithAntiVirus"=dword:00000001 ; 1=Scan downloaded attachments with AV; 0=Do not.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\CredUI]
+"EnumerateAdministrators"=dword:00000000 ; 0=Do not enumerate admin accounts on elevation prompts (privacy); 1=Enumerate.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\DataCollection]
+"AllowTelemetry"=dword:00000000 ; 0=Security level (Enterprise/Education/IoT only); Pro min is typically 1 (Required).
+"AllowDeviceNameInTelemetry"=dword:00000000 ; 0=Do not include device name in telemetry; 1=Include.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
+"AllowOnlineTips"=dword:00000000 ; 0=Disable online tips/suggestions; 1=Enable.
+"HidePeopleBar"=dword:00000001 ; 1=Hide People/Contacts bar; 0=Show.
+"HideSCAHealth"=dword:00000000 ; 1=Hide Security Center icon; 0=Show (consider 0 to surface alerts).
+"HideSCAMeetNow"=dword:00000001 ; 1=Hide Meet Now; 0=Show.
+"HonorAutorunSetting"=dword:00000001 ; 1=Honor NoDriveTypeAutoRun across all types; 0=Ignore.
+"NoAutoplayfornonVolume"=dword:00000001 ; 1=Disable AutoPlay on non-volume devices (e.g., phones); 0=Enable.
+"NoAutorun"=dword:00000001 ; 1=Disable Autorun on all drives (legacy toggle); prefer NoDriveTypeAutoRun=0xFF.
+"NoCDBurning"=dword:00000001 ; 1=Disable built-in CD burning; 0=Enable.
+"NoDriveAutoRun"=dword:ffffffff ; Disable AutoRun per-drive bitmap (FFFFFFFF = all).
+"NoDriveTypeAutoRun"=dword:000000ff ; 0xFF=Disable AutoRun on all drive types (recommended).
+"NoEncryptOnMove"=dword:00000000 ; 0=Allow EFS when moving files to NTFS; 1=Disable.
+"NoLowDiskSpaceChecks"=dword:00000000 ; 1=Disable low disk space alerts (noise reduction); 0=Enable.
+"NoOnlineShop"=dword:00000001 ; 1=Hide online service links in shell; 0=Show.
+"NoOSUpgrade"=dword:00000001 ; 1=Block OS upgrade offers (stay on current release); 0=Allow.
+"NoPreviousVersionsPage"=dword:00000001 ; 1=Hide Previous Versions tab; 0=Show.
+"NoSharing"=dword:00000000 ; 1=Hide sharing UI; 0=Show.
+"NoUseStoreOpenWith"=dword:00000001 ; 1=Don’t suggest Microsoft Store for unknown file types; 0=Allow.
+"NoWebServices"=dword:00000001 ; 1=Disable web services integration in shell; 0=Enable.
+"NoInternetOpenWith"=dword:00000001 ; 1=Block “Look for app in the Store”; 0=Allow.
+"NoResolveSearch"=dword:00000001 ; 1=Disable Internet-based search results; 0=Allow.
+"NoResolveTrack"=dword:00000001 ; 1=Disable link tracking to resolve shell shortcuts; 0=Allow.
+"NoNetCrawling"=dword:00000001 ; 1=Disable network shares crawling for libraries; 0=Allow.
+"DisableAutoplay"=dword:00000001 ; 1=Disable AutoPlay overall; 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\WAU]
+"Disabled"=dword:00000001 ; 1=Disable Windows Anytime Upgrade UI (obsolete feature); 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Ext]
+"RestrictToList"=dword:00000001 ; 1=Allow only approved shell/browser extensions; 0=Allow all (less secure).
+"IgnoreFrameApprovalCheck"=dword:00000000 ; 0=Require approval for ActiveX in IFRAME; 1=Ignore (less secure).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\MobilityCenter]
+"NoMobilityCenter"=dword:00000001 ; 1=Disable Windows Mobility Center (reduce surface); 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\PresentationSettings]
+"NoPresentationSettings"=dword:00000001 ; 1=Disable Presentation Settings mode; 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Servicing]
+"UseWindowsUpdate"=dword:00000002 ; 2=Contact Windows Update for repair/on-demand features; 1=Never contact WU; 0=Default. (2 improves component repair; stricter sites use 1.)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System]
+"ConsentPromptBehaviorAdmin"=dword:00000002 ; UAC (Admins): 2=Prompt for consent on Secure Desktop (recommended); 0=Silent elevate (bad); 5=Prompt for credentials for all (very strict).
+"ConsentPromptBehaviorUser"=dword:00000000 ; UAC (Standard users): 0=Automatically deny elevation; 1/3=Prompt for creds (stricter, more usable).
+"DisableAutomaticRestartSignOn"=dword:00000001 ; 1=Block ARSO auto-sign-in after updates (privacy); 0=Allow.
+"DisableCAD"=dword:00000000 ; 0=Require Ctrl+Alt+Del (secure); 1=Don’t require.
+"DisablePrivacyExperience"=dword:00000001 ; 1=Skip privacy OOBE (enterprise default); 0=Show.
+"DisableStatusMessages"=dword:00000000 ; 0=Show normal status; 1=Hide (you set VerboseStatus=1 below anyway).
+"DisplayLastLogonInfo"=dword:00000000 ; 1=Show last interactive logon info (helps detect compromise); 0=Hide.
+"DontDisplayLastUserName"=dword:00000001 ; 1=Hide last signed-in user at logon (privacy); 0=Show.
+"DontDisplayLockedUserId"=dword:00000003 ; 3=Don’t display user on lock screen; 1=Show domain\user; 2=Show display name only.
+"DontDisplayNetworkSelectionUI"=dword:00000001 ; 1=Hide network selection on logon (reduce surface); 0=Show.
+"DontEnumerateConnectedUsers"=dword:00000001 ; 1=Don’t enumerate connected users (privacy); 0=Enumerate.
+"DisableLockScreenAppNotifications"=dword:00000001 ; 1=No app notifications on lock screen (privacy).
+"EnableFirstLogonAnimation"=dword:00000000 ; 0=Disable first-logon animation; 1=Enable.
+"EnableInstallerDetection"=dword:00000001 ; 1=Enable installer detection for UAC; 0=Disable (breaks legacy installers).
+"EnableLUA"=dword:00000001 ; 1=Enable UAC (required for modern security); 0=Disable (unsafe).
+"EnableSecureUIAPaths"=dword:00000001 ; 1=UIAccess apps must come from secure locations; 0=Allow elsewhere (unsafe).
+"EnableVirtualization"=dword:00000001 ; 1=Enable UAC file/registry virtualization for legacy apps; 0=Disable.
+"EnumerateLocalUsers"=dword:00000000 ; 0=Do not enumerate local users on logon; 1=Enumerate.
+"FilterAdministratorToken"=dword:00000001 ; 1=Enable Admin Approval Mode for built-in Administrator (split token); 0=Legacy full token.
+"HideFastUserSwitching"=dword:00000001 ; 1=Hide Fast User Switching (reduce confusion/surface); 0=Show.
+"InactivityTimeoutSecs"=dword:00000384 ; Auto-lock after 900s (15 min). Adjust to your policy.
+"LegalNoticeCaption"="AUTHORIZED USE ONLY" ; Banner caption.
+"LegalNoticeText"="This system is for authorized use only. Activity may be monitored and disclosed." ; Banner text (meets common baseline guidance).
+"LocalAccountTokenFilterPolicy"=dword:00000000 ; 0=Remote UAC restrictions ON (recommended); 1=OFF (unsafe).
+;"NoConnectedUser"=dword:00000003 ; 3=Block Microsoft Account sign-in (consumer IDs); 1=Users can’t add MSA; 0=Allow.
+;"MSAOptional"=dword:00000001 ; 1=Block MSA use even more strictly on some builds (works with NoConnectedUser=3).
+"PromptOnSecureDesktop"=dword:00000001 ; 1=UAC prompts on Secure Desktop (recommended); 0=On user desktop (phishable).
+"ScForceOption"=dword:00000000 ; 1=Force smart card for interactive logon (strict; ensure user base supports it); 0=Don’t force.
+"ShutdownWithoutLogon"=dword:00000000 ; 0=Hide shutdown at logon (secure); 1=Show.
+"UseLogonCredential"=dword:00000000 ; 0=Don’t cache logon creds in WDigest (modern default); keep 0 for security.
+"ValidateAdminCodeSignatures"=dword:00000001 ; 1=Only elevate signed/validated executables (strict); 0=No signature requirement.
+"VerboseStatus"=dword:00000001 ; 1=Show verbose boot/shutdown status; 0=Normal.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\Audit]
+"ProcessCreationIncludeCmdLine_Enabled"=dword:00000001 ; 1=Include command line in Event ID 4688 (visibility); 0=Don’t include.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters]
+"AllowEncryptionOracle"=dword:00000000 ; 0=Force secure (patched) CredSSP only; 1=Mitigated (compat); 2=Vulnerable (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\Kerberos\Parameters]
+"SupportedEncryptionTypes"=dword:00000018 ; AES-only (commonly AES128+AES256). Ensure domain/DC policy agrees to avoid auth failures.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\TextInput]
+"AllowLinguisticDataCollection"=dword:00000000 ; 0=Block typing/inking data collection (privacy); 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Windows]
+"DisableFirstLogonAnimation"=dword:00000001 ; 1=Disable first-logon animation; 0=Enable.
+"TurnOffWinCal"=dword:00000000 ; 0=Keep Windows Calendar support; 1=Turn off (legacy).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Windows\Sidebar]
+"TurnOffGadgets"=dword:00000001 ; 1=Disable gadgets (legacy risk); 0=Enable.
+"TurnOffSidebar"=dword:00000001 ; 1=Disable Sidebar (legacy); 0=Enable.
+"TurnOffUserInstalledGadgets"=dword:00000001 ; 1=Block user-installed gadgets; 0=Allow.
+"TurnOffUnsignedGadgets"=dword:00000001 ; 1=Block unsigned gadgets; 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\WinBio\Credential Provider]
+"Enabled"=dword:00000000 ; 1=Enable Windows Hello (biometrics) credential provider; 0=Disable. (You disabled Biometrics elsewhere; reconcile as desired.)
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\WindowsUpdate\UX\Settings]
+"HideMCTLink"=dword:00000000 ; Fix type/zeros: use DWORD 0. Hides “Media Creation Tool” link in UX when 1.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\WinTrust\Config]
+"EnableCertPaddingCheck"=dword:00000001 ; REG_SZ here; prefer REG_DWORD 1 for scanners/consistency (see commented fix below).
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\WinTrust\Trust Providers\Software Publishing]
+"State"=dword:00023c00 ; High-security Authenticode checks (disallow weak/unsafe zones). Don’t loosen unless needed.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\Windows Error Reporting]
+"Disabled"=dword:00000001 ; 1=Disable WER globally; 0=Enable. Consider central logging if disabling.
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\WlanSvc\MacRandomization]
+"EnableRandomization"=dword:00000002 ; 2=MAC randomization enabled by default; 1=On; 0=Off. Keep 2 for privacy.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft Services\LAPS]
+"DoNotAllowPasswordExpirationTime"=dword:00000000 ; 0=Allow expiration timestamp (rotate on schedule); 1=Disallow.
+"PasswordAgeDays"=dword:0000001e ; 30 days rotation (0x1E). Lower = more secure, more churn.
+"PasswordComplexity"=dword:00000004 ; 4=Upper+Lower+Number+Special (max complexity); 3/2=weaker.
+"PasswordLength"=dword:00000014 ; 20 chars. Consider 24–32 if apps allow.
+"PostAuthenticationResetDelay"=dword:0000001e ; Minutes to delay password reset after successful auth (e.g., 30).
+"PwdExpirationProtectionEnabled"=dword:00000001 ; 1=Protect against password expiry bypass (Windows LAPS specific; ensure correct product hive).
+
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\AppHVSI]
+"AllowAppHVSI"=dword:00000001 ; 1=Enable Application Guard (containers) for supported apps; 0=Disable.
+"AllowPersistence"=dword:00000000 ; 0=No persistence to host (most secure); 1=Allow persistence (less secure).
+"AllowVirtualGPU"=dword:00000000 ; 0=Disable vGPU in container (more isolate); 1=Enable (perf/features).
+"BlockNonEnterpriseContent"=dword:00000001 ; 1=Block non-enterprise content; 0=Allow.
+"ClipboardSettings"=dword:00000000 ; 0=No clipboard between container/host; >0=Permissive modes (test risk).
+"SaveFilesToHost"=dword:00000000 ; 0=Disallow saving from container to host; 1=Allow.
+"CameraMicrophoneRedirection"=dword:00000000 ; 0=Block cam/mic into container; 1=Allow (enable only if needed).
+"PrintToPDFBlocked"=dword:00000001 ; 1=Block saving to PDF from container (data exfil control).
+
+
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\AppV\Client]
+"AllowAppVClient"=dword:00000000 ; 0=Disable App-V client; 1=Enable (only if you use App-V).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Assistance\Client\1.0]
+"DisableChatTechnicalSupport"=dword:00000001 ; 1=Disable chat-based support; 0=Enable.
+"NoOnlineHelp"=dword:00000001 ; 1=Disable online help; 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Assistance\Client\1.0\Settings]
+"NoOnlineAssist"=dword:00000001 ; 1=Disable online assistance; 0=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Authentication\Device\SaferAuthentication]
+"AllowSecondaryAuthenticationDevice"=dword:00000000 ; 0=Block companion/secondary auth devices; 1=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Biometrics]
+"Enabled"=dword:00000000 ; 0=Disable biometrics (Windows Hello) via policy; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Biometrics\FacialFeatures]
+"Enabled"=dword:00000000 ; 0=Disable Face; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Biometrics\Fingerprint]
+"Enabled"=dword:00000000 ; 0=Disable Fingerprint; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Biometrics\FingerprintFeatures]
+"Enabled"=dword:00000000 ; 0=Disable advanced fingerprint features; 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Camera]
+;"AllowCamera"=dword:00000001 ; 1=Allow camera; 0=Block (you require camera, so 1 is correct).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Cryptography\Configuration\SSL\00010002]
+"Functions"="TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256;TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256" ; Allowed TLS 1.2+ cipher suites (modern, FS). Ensure server/client lists match your apps.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\DesktopAppInstaller]
+"EnableAppInstaller"=dword:00000001 ; 1=Enable App Installer (ms-appinstaller protocol); 0=Disable.
+"EnableExperimentalFeatures"=dword:00000000 ; 0=Disable experimental features; 1=Enable (not recommended on prod).
+"EnableHashVerification"=dword:00000001 ; 1=Require Package Hash verification; 0=Don’t require.
+"EnableMSAppInstallerProtocol"=dword:00000001 ; 1=Allow MS App Installer protocol; 0=Block.
+"MSAppInstallerIntegrityScan"=dword:00000001 ; 1=Extra integrity checks; 0=Off.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Dsh]
+"AllowNewsAndInterests"=dword:00000000 ; 0=Hide News & Interests/Widgets (privacy); 1=Show.
+
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\EnhancedStorage]
+"TcgSecurityActivationDisabled"=dword:00000001 ; 1=Block TCG/eDrive security activation (reduces unexpected hardware crypto/IEEE1667 behavior); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\FIDO]
+"EnableFIDODevice"=dword:00000000 ; 0=Disable FIDO2/security keys (very strict; reduces phishing-resistant sign-in options); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\FindMyDevice]
+"AllowFindMyDevice"=dword:00000000 ; 0=Disable Find My Device (privacy); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\FVE]
+"DisableExternalDMAUnderLock"=dword:00000001 ; 1=Block new external DMA (e.g., Thunderbolt) when locked; 0=Allow (not recommended).
+"EncryptionMethodWithXtsFdv"=dword:00000007 ; XTS-AES-256 for Fixed Data Volumes (3=128-bit, 7=256-bit).
+"EncryptionMethodWithXtsOs"=dword:00000007 ; XTS-AES-256 for OS volume (3=128-bit, 7=256-bit).
+"EncryptionMethodWithXtsRdv"=dword:00000007 ; XTS-AES-256 for Removable Data Volumes (3=128-bit, 7=256-bit).
+"MinimumPINLength"=dword:00000008 ; Require BitLocker pre-boot PIN length ≥8.
+"OmitRecoveryPrint"=dword:00000001 ; 1=Hide “print recovery key” option; 0=Show.
+"OSEncryptionType"=dword:00000001 ; 1=Full encryption (stronger); 0=Used-space-only (faster).
+"PreventDeviceEncryption"=dword:00000001 ; 1=Disable automatic Device Encryption (you’ll manage BitLocker explicitly); 0=Allow.
+"RDVAllowBDE"=dword:00000000 ; 1=Allow BitLocker on removable drives; 0=Disallow.
+"RDVConfigureBDE"=dword:00000001 ; 1=Enforce RDV policy; 0=Not configured.
+"RDVDenyWriteAccess"=dword:00000000 ; 1=Deny write to removable drives unless protected by BitLocker; 0=Allow writes.
+"RecoveryKeyMessageSource"=dword:00000002 ; Source for recovery UI message (policy-defined/custom). Keep consistent with your helpdesk guidance.
+"RequirePreBootKeyboardInput"=dword:00000001 ; 1=Require pre-boot keyboard (external KB usable at boot); 0=No requirement.
+"UseEnhancedPin"=dword:00000001 ; 1=Allow enhanced (alphanumeric) PINs; 0=Numeric only. (Alias of UseEnhancedPINs on some builds.)
+"UseEnhancedPINs"=dword:00000001 ; Same intent as above; keep both for cross-version coverage.
+"UseHardwareBasedEncryption"=dword:00000000 ; 0=Disallow drive hardware encryption (use software BitLocker) — recommended.
+"UseHardwareBasedEncryptionForFixedData"=dword:00000000 ; 0=Disallow hardware encryption for FDV — recommended.
+"UseHardwareBasedEncryptionForRemovableData"=dword:00000000 ; 0=Disallow hardware encryption for RDV — recommended.
+"RecoveryPasswordRotation"=dword:00000001 ; 1=Rotate recovery password automatically after use (Win11+).
+"FDVEncryptionType"=dword:00000001 ; 1=Full encryption for fixed drives; 0=Used space only.
+"OSAllowHardwareXtsAES"=dword:00000000 ; 0=Disallow hardware XTS AES even if reported (belt-and-suspenders with UseHardwareBasedEncryption=0).
+;"UseTPM"=dword:00000000 ; 1=Use TPM protector required; 0=Not required.
+;"UseTPMKey"=dword:00000000 ; 0=No startup key with TPM (you’re using TPM+PIN); 1=Require startup key (stricter).
+;"UseTPMPIN"=dword:00000000 ; 1=Require TPM+PIN (two-factor pre-boot); 0=Don’t require.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\GameBar]
+"AllowAutoGameMode"=dword:00000000 ; 0=Disable auto Game Mode; 1=Enable (perf feature, not security).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\HumanPresence]
+"AllowWakeWhenExternalDisplayConnected"=dword:00000000 ; 0=Block wake-on-presence when external display attached; 1=Allow.
+"ForceInstantLock"=dword:00000002 ; 2=Force Disabled; 1=Force Enabled; 0=Not configured. (You’re disabling instant lock.)
+"ForceInstantWake"=dword:00000002 ; 2=Force Disabled; 1=Force Enabled; 0=Not configured.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\InputPersonalization]
+"AllowInputPersonalization"=dword:00000000 ; 0=Block typing/inking personalization (privacy); 1=Allow.
+"RestrictExplicitInkCollection"=dword:00000001 ; 1=Restrict explicit ink collection by apps; 0=Allow.
+"RestrictImplicitInkCollection"=dword:00000001 ; 1=Restrict implicit ink collection; 0=Allow.
+"RestrictImplicitTextCollection"=dword:00000001 ; FIX: your input had malformed DWORD (…0000000). 1=Restrict implicit text collection; 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Feeds]
+"DisableEnclosureDownload"=dword:00000001 ; 1=Block feed enclosure downloads (legacy IE/RSS); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Internet Explorer\Main]
+"DisableFirstRunCustomize"=dword:00000001 ; 1=Skip IE first-run (legacy); 0=Show.
+"DisablePasswordManager"=dword:00000001 ; 1=Disable IE password manager (legacy); 0=Enable.
+"FormSuggest Passwords"="no" ; Disable form password suggestions (legacy IE).
+"RunOnceComplete"=dword:00000001 ; 1=Mark RunOnce as complete.
+"RunOnceHasShown"=dword:00000001 ; 1=RunOnce page has been shown.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\LAPS]
+"ADPasswordEncryptionEnabled"=dword:00000001 ; 1=Encrypt LAPS passwords in AD (requires LAPS cert infra); 0=Plain in AD (not recommended).
+"BackupDirectory"=dword:00000000 ; 1=Backup to Active Directory; 2=Backup to Azure AD (Windows LAPS), depending on edition.
+"PasswordAgeDays"=dword:0000001e ; Rotate every 30 days.
+"PasswordComplexity"=dword:00000004 ; 4=Upper+Lower+Digit+Special (max).
+"PasswordLength"=dword:0000000f ; 15 chars (consider 20–24+ if apps allow).
+"PwdExpirationProtectionEnabled"=dword:00000001 ; 1=Protect against expiry bypass; 0=Off.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Messenger\Client]
+"PreventAutoRun"=dword:00000001 ; 1=Prevent auto-run of Messenger (legacy); 0=Allow.
+"PreventRun"=dword:00000001 ; 1=Block running Messenger (legacy); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\MicrosoftAccount]
+;"DisableUserAuth"=dword:00000001 ; 1=Block Microsoft Account sign-in (consumer IDs); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\MMC]
+;"Restrict_Run"=dword:00000001 ; 1=Restrict MMC usage; 0=Allow.
+"RestrictAuthorMode"=dword:00000001 ; 1=Block MMC author mode; 0=Allow.
+"RestrictAuthorUnsigned"=dword:00000001 ; 1=Block unsigned MMC consoles; 0=Allow.
+"RestrictToPermittedSnapins"=dword:00000001 ; 1=Allow only permitted snap-ins; 0=All snap-ins allowed.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\MRT]
+"DontOfferThroughWUAU"=dword:00000001 ; 1=Don’t offer MSRT via Windows Update; 0=Offer (security coverage if unmanaged AV).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\OneDrive]
+"DisableAutoConfig"=dword:00000001 ; 1=Block auto-config of OneDrive for consumer Microsoft Accounts; 0=Allow.
+"PreventNetworkTrafficPreUserSignIn"=dword:00000001 ; 1=Block OneDrive network traffic before user sign-in (privacy); 0=Allow.
+"DisableKFMNotification"=dword:00000001 ; 1=Hide Known Folder Move prompts; 0=Show.
+"DisablePersonalSync"=dword:00000001 ; 1=Block personal OneDrive (consumer) sync; 0=Allow.
+"KFMBlockOptIn"=dword:00000001 ; 1=Block KFM opt-in; 0=Allow.
+"KFMSilentOptIn"="" ; Empty=No tenant set for silent KFM. (Populate with your AAD tenant GUID to silently enable KFM for enterprise.)
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\PassportForWork]
+"DisablePostLogonProvisioning"=dword:00000001 ; 1=Disable WHfB post-logon provisioning; 0=Allow.
+"Enabled"=dword:00000000 ; 0=Disable Windows Hello for Business; 1=Enable (org policy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\PassportForWork\Biometrics]
+"Enabled"=dword:00000000 ; 1=Allow biometrics for WHfB; 0=Disallow. (Note: parent Enabled=0 disables WHfB overall; reconcile per device role.)
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Speech]
+"AllowOnlineSpeechRecognition"=dword:00000000 ; 0=Disable cloud speech services (privacy); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\SQMClient\Windows]
+"CEIPEnable"=dword:00000000 ; 0=Disable CEIP/telemetry (enterprise); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\SystemCertificates\AuthRoot]
+"DisableRootAutoUpdate"=dword:00000000 ; 0=Allow root certificate auto-update (better compatibility); 1=Disable (strict).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\TabletPC]
+"DisableSnippingTool"=dword:00000001 ; 1=Disable Snipping Tool (data loss/exfil control); 0=Enable.
+"PreventHandwritingDataSharing"=dword:00000001 ; 1=Block sharing inking data; 0=Allow.
+"PreventHandwritingErrorReports"=dword:00000001 ; 1=Block error reports; 0=Allow.
+"PreventHandwritingPersonalization"=dword:00000001 ; 1=Block personalization from inking data; 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\UEV]
+"EnableUEV"=dword:00000000 ; 0=Disable User Experience Virtualization; 1=Enable.
+"SyncEnabled"=dword:00000000 ; 0=Disable UEV sync; 1=Enable.
+"UseLocalTemplateCatalog"=dword:00000000 ; 0=No local catalog; 1=Use local (if UEV enabled).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender]
+"DisableAntiSpyware"=dword:00000000 ; Deprecated/ignored on modern Win10/11; 0 keeps Defender on (recommended).
+"PUAProtection"=dword:00000001 ; 1=Block potentially unwanted apps; 0=Off; 2=Audit-only.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender Security Center\Notifications]
+"DisableEnhancedNotifications"=dword:00000000 ; 0=Show enhanced notifications; 1=Hide.
+"DisableNotifications"=dword:00000000 ; 0=Show all notifications; 1=Hide.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender Security Center\Systray]
+"HideSystray"=dword:00000000 ; 0=Show Windows Security icon; 1=Hide.
+"HideWindowsSecuritySystray"=dword:00000000 ; 0=Show; 1=Hide.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\MpEngine]
+"MpEnablePus"=dword:00000001 ; 1=Detect PUA/PUS (pairs well with PUAProtection=1).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Policy Manager\ASR Rules]
+"{01443614-CD74-433A-B99E-2ECDC07BFC25}"=dword:00000001 ; Block executables unless they meet prevalence/age/trusted list (cloud required).
+"{26190899-1602-49E8-8B27-EB1D0A1CE869}"=dword:00000001 ; Block Office comms apps (Outlook) from creating child processes.
+"{3B576869-A4EC-4529-8536-B80A7769E899}"=dword:00000001 ; Block Office apps from creating executable content.
+"{5BEB7EFE-FD9A-4556-801D-275E5FFC04CC}"=dword:00000001 ; Block execution of potentially obfuscated scripts (js/vbs/ps/macro).
+"{75668C1F-73B5-4CF0-BB93-3ECF5CB7CC84}"=dword:00000001 ; Block Office apps from injecting code into other processes.
+"{92E97FA1-2EDF-4476-BDD6-9DD0B4DDDC7B}"=dword:00000001 ; Block Win32 API calls from Office macros.
+"{9E6C4E1F-7D60-472F-BA1A-A39EF669E4B2}"=dword:00000001 ; Block credential stealing from LSASS (redundant if LSA protection+CredGuard).
+"{BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550}"=dword:00000001 ; Block executable content from email/webmail.
+"{D1E49AAC-8F56-4280-B9BA-993A6D77406C}"=dword:00000001 ; Block process creations via PsExec/WMI (MDM/Intune-managed only).
+"{D3E037E1-3EB8-44C8-A917-57927947596D}"=dword:00000001 ; Block js/vbs from launching downloaded executable content.
+"{D4F940AB-401B-4EFC-AADC-AD5F3C50688A}"=dword:00000001 ; Block ALL Office apps from creating child processes.
+"{56a863a9-875e-4185-98a7-b882c64b5ce5}"=dword:00000001 ; Block abuse of exploited vulnerable signed drivers.
+"{7674ba52-37eb-4a4f-a9a1-f0f9a1619a2c}"=dword:00000001 ; Block Adobe Reader from creating child processes.
+"{b2b3f03d-6a65-4f7b-a9c7-1c7ef74a9ba4}"=dword:00000001 ; Block untrusted/unsigned processes from USB.
+"{c0033c00-d16d-4114-a5a0-dc9b3a7d2ceb}"=dword:00000001 ; Block use of copied/impersonated system tools.
+"{c1db55ab-c21a-4637-bb3f-a12568109d35}"=dword:00000001 ; Use advanced ransomware protection (cloud required).
+"{e6db77e5-3df2-4cf1-b95a-636979351e5b}"=dword:00000001 ; Block persistence via WMI event subscription.
+;"{33ddedf1-c6e0-47cb-833e-de6133960387}"=dword:00000001 ; Block rebooting machine in Safe Mode.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Real-Time Protection]
+"DisableBehaviorMonitoring"=dword:00000000 ; 0=Enable behavior monitoring (recommended).
+"DisableIOAVProtection"=dword:00000000 ; 0=Scan downloads/attachments (IOAV) (recommended).
+"DisableOnAccessProtection"=dword:00000000 ; 0=Enable on-access scanning.
+"DisableRealtimeMonitoring"=dword:00000000 ; 0=Real-time protection ON.
+"DisableRoutinelyTakingAction"=dword:00000000 ; 0=Allow automatic remediation.
+"DisableScriptScanning"=dword:00000000 ; 0=Enable script scanning (AMSI).
+"RealtimeScanDirection"=dword:00000000 ; 0=Scan both incoming & outgoing (recommended); 1=Incoming only.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Scan]
+"DisableRemovableDriveScanning"=dword:00000001 ; 0=Do NOT disable — allows scanning of removable during applicable scans.
+"DisableScanningMappedNetworkDrivesForFullScan"=dword:00000001 ; 0=Include mapped drives in full scans (recommended).
+"DisableScheduleRun"=dword:00000000 ; 0=Allow scheduled scans.
+"ScanRemovableDrives"=dword:00000001 ; 0=Do NOT include in Full scans; 1=Include (recommended for strict).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Spynet]
+"DisableBlockAtFirstSeen"=dword:00000001 ; 1=Disable BAfS (not recommended for max protection); 0=Enable BAfS.
+"SpyNetReporting"=dword:00000000 ; 0=Not joined; 1=Basic; 2=Advanced (recommended for protection).
+"SubmitSamplesConsent"=dword:00000002 ; 2=Never send samples; 1=Send safe samples; 3=Send all; 0/3=Prompt/All (varies by build).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Windows Defender Exploit Guard\ASR\Rules]
+"{01443614-CD74-433A-B99E-2ECDC07BFC25}"=dword:00000001 ; Same ASR (Block untrusted executables; cloud required).
+"{26190899-1602-49E8-8B27-EB1D0A1CE869}"=dword:00000001 ; Outlook child-processes blocked.
+"{3B576869-A4EC-4529-8536-B80A7769E899}"=dword:00000001 ; Office create exe content blocked.
+"{5BEB7EFE-FD9A-4556-801D-275E5FFC04CC}"=dword:00000001 ; Obfuscated scripts blocked.
+"{75668C1F-73B5-4CF0-BB93-3ECF5CB7CC84}"=dword:00000001 ; Office code injection blocked.
+"{92E97FA1-2EDF-4476-BDD6-9DD0B4DDDC7B}"=dword:00000001 ; Macro Win32 API blocked.
+"{9E6C4E1F-7D60-472F-BA1A-A39EF669E4B2}"=dword:00000001 ; LSASS credential theft blocked.
+"{BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550}"=dword:00000001 ; Email/webmail executables blocked.
+"{D1E49AAC-8F56-4280-B9BA-993A6D77406C}"=dword:00000001 ; PSExec/WMI process creates blocked (see note). 2 for Audit
+"{D3E037E1-3EB8-44C8-A917-57927947596D}"=dword:00000001 ; js/vbs launching downloaded exe blocked.
+"{D4F940AB-401B-4EFC-AADC-AD5F3C50688A}"=dword:00000001 ; All Office child-processes blocked.
+"{56a863a9-875e-4185-98a7-b882c64b5ce5}"=dword:00000001 ; Exploited vulnerable signed drivers blocked.
+"{7674ba52-37eb-4a4f-a9a1-f0f9a1619a2c}"=dword:00000001 ; Adobe Reader child-processes blocked.
+"{b2b3f03d-6a65-4f7b-a9c7-1c7ef74a9ba4}"=dword:00000001 ; Unsigned/untrusted processes from USB blocked.
+"{c0033c00-d16d-4114-a5a0-dc9b3a7d2ceb}"=dword:00000001 ; Copied/impersonated system tools blocked.
+"{c1db55ab-c21a-4637-bb3f-a12568109d35}"=dword:00000001 ; Advanced ransomware protection (cloud required).
+"{e6db77e5-3df2-4cf1-b95a-636979351e5b}"=dword:00000001 ; WMI persistence blocked.
+;"{33ddedf1-c6e0-47cb-833e-de6133960387}"=dword:00000001 ; Block rebooting to Safe Mode.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Windows Defender Exploit Guard\Controlled Folder Access]
+"EnableControlledFolderAccess"=dword:00000001 ; 1=Enable CFA (allow-list apps as needed); 0=Off.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows Defender\Windows Defender Exploit Guard\Network Protection]
+"EnableNetworkProtection"=dword:00000001 ; 1=Enable Network Protection (block); 0=Off; 2=Audit.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\CurrentVersion\EFS]
+"EfsConfiguration"=dword:00000001 ; 1=Do not allow EFS (disable NTFS encryption); 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\CurrentVersion\Winlogon]
+"GpNetworkStartTimeoutPolicyValue"=dword:0000003c  ; 60 seconds (hex 0x3C)
+"SyncForegroundPolicy"=dword:00000001 ; 1=Process GP synchronously at logon.
+;"GPNetworkStartTimeoutPolicyValue"=dword:00000258 ; 600 seconds (10 min) wait for GP network at logon.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\DCOM]
+"RequireIntegrityActivationAuthenticationLevel"=dword:00000001 ; 1=Require integrity on activation auth.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\DCOM\AppCompat]
+"ActivationSecurityCheckExemptionList"=- ; Delete exemption list (no legacy relaxations).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\DNSClient]
+"DisableSmartNameResolution"=dword:00000001 ; 1=Disable Smart Multi-Homed Name Resolution (mitigate spoofing).
+"DoHPolicy"=dword:00000002 ; 2=Require DNS-over-HTTPS; 1=Allow; 0=Disable (ensure resolver supports DoH).
+"EnableAutoDoh"=dword:00000000 ; 0=Do not automatically enable DoH; 1=Auto if possible.
+"EnableMulticast"=dword:00000000 ; 0=Disable LLMNR multicast name resolution (mitigate spoofing).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\EFS]
+"EfsConfiguration"=dword:00000001 ; 1=Disable EFS (policy hive) — mirrors setting above.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\FTH]
+"Enabled"=dword:00000000 ; 0=Disable Fault Tolerant Heap (reduce obscure behaviors); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\Printers]
+"AllowPrintSpoolerToAcceptClientConnections"=dword:00000000 ; 0=No remote client connections to spooler (safe).
+"DisableAddPrinter"=dword:00000000 ; 0=Allow adding printers; 1=Block.
+"DisableCloudPrint"=dword:00000001 ; 1=Disable legacy cloud print paths.
+"DisableHTTPPrinting"=dword:00000000 ; 0=Allow HTTP printing (consider 1 to require IPPS/TLS).
+"DisableIPPoverUSB"=dword:00000001 ; 0=Allow IPP over USB (for modern drivers); 1=Disable.
+"DisableMDNSOffload"=dword:00000000 ; 0=Allow mDNS offload; 1=Disable (tighten discovery).
+"DisableMopriaDiscovery"=dword:00000000 ; 0=Allow Mopria discovery; 1=Disable (stricter).
+"DisableWebPnPDownload"=dword:00000001 ; 1=Block WebPnP driver downloads (safer).
+"DoNotInstallCompatibleDriverFromWindowsUpdate"=dword:00000001 ; 1=Don’t fetch “compatible” drivers from WU.
+"ForceDriverIsolation"=dword:00000002 ; 2=Isolate print drivers (strongly recommended).
+"HideGeneralTab"=dword:00000000 ; 1=Hide General tab (lockdown UI).
+"RegisterSpoolerRemoteRpcEndPoint"=dword:00000002 ; 2=Register RPC over TCP endpoint only (limit named pipes).
+"RenderPrintJobsOnClient"=dword:00000000 ; 0=Disable client-side rendering (server renders).
+"RestrictDriverInstallationToAdministrators"=dword:00000001 ; 1=Admins only install drivers.
+"RpcAuthnLevelPrivacyEnabled"=dword:00000001 ; 1=Enforce privacy (encrypt) on spooler RPC.
+"RpcUseNamedPipeProtocol"=dword:00000000 ; 0=Disallow named pipes (reduce attack surface).
+"RpcUseTcpIp"=dword:00000001 ; 1=Use RPC over TCP (preferred).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\Printers\PointAndPrint]
+"NoWarningNoElevationOnInstall"=dword:00000000 ; 0=Warn+Elevation on driver install (safe).
+"NoWarningNoElevationOnUpdate"=dword:00000000 ; 0=Warn+Elevation on driver update (safe).
+"PackagePointAndPrintOnly"=dword:00000001 ; 1=Only allow packaged (v4) drivers.
+"RestrictDriverInstallationToAdministrators"=dword:00000001 ; 1=Only admins can install drivers.
+"TrustedServers"="" ; Empty means not restricting to named servers; populate to lock to print servers.
+"UpdatePromptSettings"=dword:00000001 ; 1=Prompt users before updates (safe default).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\Rpc]
+"AuthLevel"=dword:00000005 ; 5=RPC_C_AUTHN_LEVEL_PKT_PRIVACY (encrypt) — strongest.
+"EnableAuthEpResolution"=dword:00000001 ; 1=Auth on endpoint mapper resolution.
+"RestrictRemoteClients"=dword:00000001 ; 1=Authenticated clients only.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\SystemRestore]
+"DisableConfig"=dword:00000000 ; 0=Allow System Restore configuration.
+"DisableSR"=dword:00000000 ; 0=Enable System Restore.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\Terminal Services]
+"AudioCaptureRedirectionMode"=dword:00000000 ; 0=Disable mic redirection to sessions (strict).
+"DeleteTempDirsOnExit"=dword:00000001 ; 1=Delete temp on logoff.
+"DisableAudioCapture"=dword:00000001 ; 1=Disable audio capture in RDP sessions.
+"DisableBitmapCaching"=dword:00000001 ; 1=Disable RDP bitmap caching (mitigate credential image leakage).
+"DisableClipboardRedirection"=dword:00000001 ; 1=Disable clipboard redirection.
+"DisableDeviceRedirection"=dword:00000001 ; 1=Disable device redirection (global).
+"DisableFontSmoothing"=dword:00000001 ; 1=Disable ClearType in RDP.
+"DisableHardwareCompression"=dword:00000001 ; 1=Disable hardware compression (strict).
+"DisablePasswordSaving"=dword:00000001 ; 1=Block saving creds in RDP client.
+"DisableRemoteDesktopWallpaper"=dword:00000001 ; 1=Disable wallpaper.
+"DisableSmartCard"=dword:00000001 ; 1=Disable smart card redirection (still can use for logon if enabled elsewhere).
+"fAllowToGetHelp"=dword:00000000 ; 0=Disallow Remote Assistance (solicited).
+"fAllowUnsolicited"=dword:00000000 ; 0=Disallow unsolicited RA.
+"fAllowUnsolicitedFullControl"=dword:00000000 ; 0=Disallow unsolicited full control.
+"fClientDisableUDP"=dword:00000001 ; 1=Force TCP (disable UDP transport).
+"fDisableAudio"=dword:00000001 ; 1=Disable remote audio playback.
+"fDisableAudioCapture"=dword:00000001 ; 1=Disable mic capture.
+"fDisableCam"=dword:00000001 ; 1=Disable camera redirection.
+"fDisableCcm"=dword:00000001 ; 1=Disable COM port redirection.
+"fDisableCdm"=dword:00000001 ; 1=Disable disk redirection.
+"fDisableClip"=dword:00000001 ; 1=Disable clipboard (dup of DisableClipboardRedirection).
+"fDisableCpm"=dword:00000001 ; 1=Disable printer redirection.
+"fDisableCursorBlinking"=dword:00000001 ; Cosmetic perf.
+"fDisableCursorShadow"=dword:00000001 ; Cosmetic perf.
+"fDisableFullWindowDrag"=dword:00000001 ; Cosmetic perf.
+"fDisableLPT"=dword:00000001 ; 1=Disable LPT redirection.
+"fDisablePNPRedir"=dword:00000001 ; 1=Disable PnP device redirection.
+"fDisableThemes"=dword:00000001 ; 1=Disable themes.
+"fDisableTimeZoneRedirection"=dword:00000001 ; 1=Disable timezone redirection.
+"fDisableWallpaper"=dword:00000001 ; 1=Disable wallpaper (dup of DisableRemoteDesktopWallpaper).
+"fEnableAudioRedirection"=dword:00000000 ; 0=Disable audio redirection.
+"fEnableCredSSPSupport"=dword:00000001 ; 1=Enable CredSSP.
+"fEncryptRPCTraffic"=dword:00000001 ; 1=Encrypt RPC traffic.
+"fPromptForPassword"=dword:00000001 ; 1=Prompt for password on connection.
+"fSingleSessionPerUser"=dword:00000001 ; 1=Single session per user.
+"MaxEncryptionLevel"=dword:00000003 ; 3=High; 4=FIPS.
+"MaxInstanceCount"=dword:00000001 ; 1=Limit concurrent RDP sessions (per server policy).
+"MaxTicketExpiry"=dword:00000000 ; 0=Default.
+"MinEncryptionLevel"=dword:00000003 ; 3=High minimum.
+"PerSessionTempDir"=dword:00000001 ; 1=Per-session temp dirs.
+"RedirectOnlyDefaultClientPrinter"=dword:00000001 ; 1=Only redirect default printer.
+"RedirectSmartCards"=dword:00000000 ; 0=Do not redirect smart cards.
+"SecurityLayer"=dword:00000002 ; 2=TLS only; 1=Negotiate; 0=RDP Security (legacy).
+"SelectTransport"=dword:00000001 ; 1=Use TCP (not RDP-UDP).
+"TSAppCompat"=dword:00000000 ; 0=Disable AppCompat shims in RDP (strict).
+"UserAuthentication"=dword:00000001 ; 1=Require NLA.
+"UseRDEasyPrintDriver"=dword:00000001 ; 1=Use Easy Print (safer driver model).
+;"MaxIdleTime"=dword:0000A8C0 ; 4320000 ms (72 min) idle timeout.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\Terminal Services\Client]
+"fClientDisableUDP"=dword:00000001 ; 1=Disable UDP at client; 0=Allow.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows NT\Terminal Services\RemoteAssistance]
+"CreateEncryptedOnlyTickets"=dword:00000001 ; 1=Only encrypted invitations.
+"fAllowFullControl"=dword:00000000 ; 0=No full control via RA.
+"fAllowToGetHelp"=dword:00000000 ; 0=Disable RA assistance.
+"fAllowUnsolicited"=dword:00000000 ; 0=Disable unsolicited RA.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\AdvertisingInfo]
+"DisabledByPolicy"=dword:00000001 ; 1=Advertising ID disabled by policy.
+"DisabledByGroupPolicy"=dword:00000001 ; 1=Advertising ID disabled (legacy alias on some builds).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\AppCompat]
+"DisableEngine"=dword:00000001 ; 1=Disable AppCompat shim engine telemetry/features (reduces legacy compat surface).
+"DisableInventory"=dword:00000001 ; 1=Disable application compatibility inventory (privacy).
+"DisablePCA"=dword:00000001 ; 1=Turn off Program Compatibility Assistant (no auto-shims/prompts).
+"VDMDisallowed"=dword:00000001 ; 1=Block 16-bit apps (NTVDM) (recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\AppInstaller]
+"EnableAdditionalSources"=dword:00000000 ; 1=Allow extra sources for App Installer/Winget (more functionality, more exposure).
+"EnableAllowedSources"=dword:00000001 ; 1=Enforce allow-list for sources (pair with source list policy).
+"EnableAppInstaller"=dword:00000001 ; 1=Enable App Installer.
+"EnableAppInstallerProtocol"=dword:00000001 ; 1=Allow appinstaller:// protocol (be sure hash checks are enforced).
+"EnableDefaultSource"=dword:00000001 ; 1=Enable default (Microsoft) source.
+"EnableExperimentalFeatures"=dword:00000000 ; 0=No experimental features (safer).
+"EnableExternalAppUriHandler"=dword:00000001 ; 1=Allow external URI handler (more exposure).
+"EnableHashOverride"=dword:00000000 ; 0=Do not allow hash override (safer).
+"EnableLocalManifestFiles"=dword:00000001 ; 1=Allow local .json manifests (more exposure; control via allow-lists).
+"EnableMSAppInstallerProtocol"=dword:00000001 ; 1=Enable ms-appinstaller protocol.
+"EnablePackageHashOverride"=dword:00000000 ; 0=Disallow package hash override (safer).
+"EnableWinget"=dword:00000001 ; 1=Enable Winget.
+"InstallServiceEnabled"=dword:00000001 ; 1=Use App Installer service (required for some scenarios).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\AppPrivacy]
+"LetAppsAccessAccountInfo"=dword:00000002 ; 2=Force Deny (vs 1=Force Allow, 0=User choice).
+"LetAppsAccessAppDiagnostics"=dword:00000002 ; Force Deny.
+"LetAppsAccessBluetooth"=dword:00000002 ; Force Deny.
+"LetAppsAccessCalendar"=dword:00000002 ; Force Deny.
+"LetAppsAccessCallHistory"=dword:00000002 ; Force Deny.
+"LetAppsAccessContacts"=dword:00000002 ; Force Deny.
+"LetAppsAccessDocumentsLibrary"=dword:00000002 ; Force Deny.
+"LetAppsAccessEmail"=dword:00000002 ; Force Deny.
+"LetAppsAccessFileSystem"=dword:00000002 ; Force Deny (UWP broad FS).
+"LetAppsAccessGazeInput"=dword:00000002 ; Force Deny.
+"LetAppsAccessGraphicsCapture"=dword:00000002 ; Force Deny (screen capture).
+"LetAppsAccessGraphicsCaptureProgrammatic"=dword:00000002 ; Force Deny (programmatic).
+"LetAppsAccessLocation"=dword:00000002 ; Force Deny.
+"LetAppsAccessMaps"=dword:00000002 ; Force Deny.
+"LetAppsAccessMessaging"=dword:00000002 ; Force Deny.
+"LetAppsAccessMotion"=dword:00000002 ; Force Deny.
+"LetAppsAccessMusicLibrary"=dword:00000002 ; Force Deny.
+"LetAppsAccessNotifications"=dword:00000002 ; Force Deny.
+"LetAppsAccessOtherDevices"=dword:00000002 ; Force Deny (device sync).
+"LetAppsAccessPhone"=dword:00000002 ; Force Deny.
+"LetAppsAccessPicturesLibrary"=dword:00000002 ; Force Deny.
+"LetAppsAccessRadios"=dword:00000002 ; Force Deny.
+"LetAppsAccessTasks"=dword:00000002 ; Force Deny.
+"LetAppsAccessUserInformation"=dword:00000002 ; Force Deny.
+"LetAppsAccessTrustedDevices"=dword:00000002 ; Force Deny.
+"LetAppsAccessUserNotificationListener"=dword:00000002 ; Force Deny.
+"LetAppsAccessVideosLibrary"=dword:00000002 ; Force Deny.
+"LetAppsActivateWithVoice"=dword:00000002 ; Force Deny.
+"LetAppsRunInBackground"=dword:00000002 ; Force Deny (can break background sync/tiles).
+"LetAppsSyncWithDevices"=dword:00000002 ; Force Deny (device sync).
+"LetAppsActivateWithVoiceAboveLock"=dword:00000002 ; Force Deny.
+"LetAppsAccessDownloadsFolder"=dword:00000002 ; Force Deny.
+"LetAppsAccessDiagnostics"=dword:00000002 ; Force Deny.
+"LetAppsGetDiagnosticInfo"=dword:00000002 ; Force Deny.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Appx]
+"AllowAllTrustedApps"=dword:00000000 ; 1=Allow sideloading trusted apps (less strict); 0=Disallow (more secure).
+"AllowAutomaticAppArchiving"=dword:00000000 ; 0=Disable auto-archive UWP apps (neutral security).
+"AllowDevelopmentWithoutDevLicense"=dword:00000000 ; 0=No Developer Mode (safer).
+"BlockNonAdminUserInstall"=dword:00000001 ; 1=Only admins can install packaged apps (safer).
+"DisableStoreOriginatedApps"=dword:00000000 ; 0=Allow Microsoft Store apps (set 1 to block).
+"EnableAppInstaller"=dword:00000001 ; 1=Enable App Installer.
+"EnableAppInstallerAutoUpdate"=dword:00000000 ; 1=App Installer auto-update on.
+"EnableMSAppInstallerProtocol"=dword:00000001 ; 1=Enable protocol.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Audit]
+"AuditAccountLockout"=dword:00000003 ; 3=Success+Failure (all entries below use 3 likewise).
+"AuditApplicationGroupManagement"=dword:00000003
+"AuditAuditPolicyChange"=dword:00000003
+"AuditAuthenticationPolicyChange"=dword:00000003
+"AuditAuthorizationPolicyChange"=dword:00000003
+"AuditComputerAccountManagement"=dword:00000003
+"AuditCredentialValidation"=dword:00000003
+"AuditDistributionGroupManagement"=dword:00000003
+"AuditDPAPIActivity"=dword:00000003
+"AuditFileShare"=dword:00000003
+"AuditFileSystem"=dword:00000003
+"AuditFilteringPlatformConnection"=dword:00000003
+"AuditFilteringPlatformPacketDrop"=dword:00000003
+"AuditGroupMembership"=dword:00000003
+"AuditHandleManipulation"=dword:00000003
+"AuditIPSecDriver"=dword:00000003
+"AuditKerberosAuthenticationService"=dword:00000003
+"AuditKerberosServiceTicketOperations"=dword:00000003
+"AuditLogoff"=dword:00000003
+"AuditLogon"=dword:00000003
+"AuditMPSSVCRuleLevelPolicyChange"=dword:00000003
+"AuditOtherAccountManagementEvents"=dword:00000003
+"AuditOtherLogonLogoffEvents"=dword:00000003
+"AuditOtherSystemEvents"=dword:00000003
+"AuditPlugAndPlayEvents"=dword:00000003
+"AuditProcessCreation"=dword:00000003
+"AuditProcessTermination"=dword:00000003
+"AuditRegistry"=dword:00000003
+"AuditRemovableStorage"=dword:00000003
+"AuditSAM"=dword:00000003
+"AuditSecurityGroupManagement"=dword:00000003
+"AuditSecurityStateChange"=dword:00000003
+"AuditSecuritySystemExtension"=dword:00000003
+"AuditSpecialLogon"=dword:00000003
+"AuditSystemIntegrity"=dword:00000003
+"AuditUserAccountManagement"=dword:00000003
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\AxInstallService]
+"OnlyUseApprovedSites"=dword:00000001 ; 1=ActiveX Install Service only uses approved sites list (legacy IE).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Backup]
+"DisableBackup"=dword:00000001 ; 1=Disable Windows Backup (legacy feature).
+"DisableScheduledBackup"=dword:00000001 ; 1=Disable scheduled backup.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\BITS]
+"DisableBranchCache"=dword:00000001 ; 1=Disable BranchCache.
+"DisablePeerCaching"=dword:00000001 ; 1=Disable peer caching (umbrella).
+"DisablePeerCachingClient"=dword:00000001 ; 1=Disable client peer caching.
+"DisablePeerCachingServer"=dword:00000001 ; 1=Disable server peer caching.
+"EnablePeerCaching"=dword:00000000 ; 0=Peer caching off.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Camera]
+;"AllowCamera"=dword:00000001 ; 1=Allow camera OS-wide.
+;"AllowUseCamera"=dword:00000001 ; 1=Allow camera usage by apps.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\CloudContent]
+"DisableWindowsConsumerFeatures"=dword:00000001 ; Disable consumer experiences/promos.
+"DisableWindowsSpotlightFeatures"=dword:00000001 ; Disable Spotlight platform.
+"DisableWindowsSpotlightOnSettings"=dword:00000001 ; No Spotlight in Settings.
+"DisableWindowsSpotlightOnActionCenter"=dword:00000001 ; No Spotlight in Action Center.
+"DisableTailoredExperiencesWithDiagnosticData"=dword:00000001 ; Disable tailored experiences.
+"AllowOnlineTips"=dword:00000000 ; 0=No online tips (redundant with below but fine).
+"ConfigureWindowsSpotlight"=dword:00000002 ; 2=Disabled (per policy mapping).
+"DisableNudges"=dword:00000001 ; Disable shell nudges.
+"DisableOnlineTips"=dword:00000001 ; Disable online tips.
+"DisableSoftLanding"=dword:00000001 ; Disable soft-landing experiences.
+"DisableThirdPartySuggestions"=dword:00000001 ; Disable third-party suggestions.
+"DisableWhatsNewInWindows"=dword:00000001 ; Disable “What’s new” experiences.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Connect]
+"AllowMiracast"=dword:00000000 ; 0=Block Miracast overall.
+"AllowProjectionToPC"=dword:00000000 ; 0=Block projecting to this PC.
+"AllowProjectionToThisPC"=dword:00000000 ; 0=Block receive mode.
+"RequirePinForPairing"=dword:00000001 ; 1=Require PIN.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\CredentialsDelegation]
+"AllowDefaultCredentials"=dword:00000000 ; 0=Disallow default creds delegation unless allow-lists configured.
+"AllowDefaultCredentialsWhenNTLMOnly"=dword:00000000 ; 0=Disallow.
+"AllowDefCredentials"=dword:00000000 ; 0=Disallow (legacy alias, keep consistent).
+"AllowFreshCredentials"=dword:00000000 ; 0=Disallow fresh creds delegation unless allow-lists configured.
+"AllowFreshCredentialsWhenNTLMOnly"=dword:00000000 ; 0=Disallow.
+"AllowProtectedCreds"=dword:00000001 ; 1=Enable “protected credentials” delegation scenario (only effective with target lists; otherwise inert).
+"AllowSavedCredentials"=dword:00000000 ; 0=Disallow saved creds delegation.
+"AllowSavedCredentialsWhenNTLMOnly"=dword:00000000 ; 0=Disallow.
+"ConcatenateDefaults_AllowDefault"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowDefaultCredentials"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowDefaultNTLMOnly"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowDefCredentialsWhenNTLMOnly"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowFresh"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowFreshCredentials"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowFreshCredentialsWhenNTLMOnly"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowFreshNTLMOnly"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowSaved"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowSavedCredentials"=dword:00000000 ; 0=Do not append defaults.
+"ConcatenateDefaults_AllowSavedNTLMOnly"=dword:00000000 ; 0=Do not append defaults.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\CredUI]
+"DisablePasswordReveal"=dword:00000001 ; 1=Hide password reveal button.
+"ShowSaveCheckBox"=dword:00000000 ; 0=Hide “Save credentials”.
+"DisablePinReset"=dword:00000001 ; 1=Disable PIN reset at logon.
+"EnumerateAdministrators"=dword:00000000 ; 0=Do not enumerate admin accounts at elevation.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings]
+"CertificateRevocation"=dword:00000001 ; 1=Check cert revocation.
+"DisableCachingOfSSLPages"=dword:00000001 ; 1=No HTTPS page caching (privacy).
+"EnableAutoproxyResultCache"=dword:00000000 ; 0=Disable auto-proxy cache.
+"EnableNegotiate"=dword:00000001 ; 1=Enable Negotiate (Kerberos/NTLM).
+"ProxySettingsPerUser"=dword:00000001 ; 1=Per-user proxy (leave 0 for per-machine).
+"WarnOnPostRedirect"=dword:00000001 ; 1=Warn on POST->GET redirect.
+"SecureProtocols"=dword:00000a00 ; TLS defaults bitmask for legacy components (TLS 1.1 + 1.2).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\3]
+"1001"=dword:00000003 ; Internet Zone: ActiveX controls — 3=Disable.
+"1004"=dword:00000003 ; Unsigned ActiveX download — 3=Disable.
+"1200"=dword:00000003 ; Run ActiveX controls — 3=Disable.
+"1201"=dword:00000003 ; Initialize/script ActiveX not marked safe — 3=Disable.
+"1400"=dword:00000003 ; .NET/Active scripting — 3=Disable (very strict; may break legacy sites).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\CurrentVersion\PushNotifications]
+"DisableNotificationCenter"=dword:00000001 ; 1=Disable Action Center.
+"DisablePushNotificationService"=dword:00000001 ; 1=Disable push service.
+"NoCloudApplicationNotification"=dword:00000001 ; 1=No cloud notifications.
+"NoTileApplicationNotification"=dword:00000001 ; 1=No tile notifications.
+"NoToastApplicationNotification"=dword:00000001 ; 1=No toast notifications.
+"NoToastApplicationNotificationOnLockScreen"=dword:00000001 ; 1=No toasts on lock screen.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DataCollection]
+"AllowTelemetry"=dword:00000000 ; 0=Security (Enterprise/Education/IoT); Pro often minimum 1 (Required).
+"AllowExperimentation"=dword:00000000 ; 0=Disable experimentation.
+"DisableOneSettingsDownloads"=dword:00000001 ; 1=Disable OneSettings content.
+"DisableTailoredExperiencesWithDiagnosticData"=dword:00000001 ; 1=Disable tailored experiences.
+"DoNotShowFeedbackNotifications"=dword:00000001 ; 1=No feedback prompts.
+"MaxTelemetryAllowed"=dword:00000000 ; 0=Max allowed = Security.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DeliveryOptimization]
+"DOAllowPeerCaching"=dword:00000000 ; 0=No peer caching.
+"DOAllowVPNPeerCaching"=dword:00000000 ; 0=No peer caching over VPN.
+"DODownloadMode"=dword:00000000 ; 0=HTTP only (no P2P).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Device Metadata]
+"PreventDeviceMetadataFromNetwork"=dword:00000001 ; 1=Block downloading device metadata/icons.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DeviceEncryption]
+"PreventDeviceEncryption"=dword:00000001 ; 1=Disable automatic Device Encryption (BitLocker managed separately).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DeviceInstall\Settings]
+"DisableSendRequestAdditionalSoftware"=dword:00000001 ; 1=Don’t request extra software during install.
+"DisableSendRequestAdditionalSoftwareToWER"=dword:00000001 ; 1=Don’t send driver requests to WER.
+"SearchOrderConfig"=dword:00000000 ; 0=Never check WU automatically for drivers.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DeviceSetup]
+"DisableDeviceStage"=dword:00000001 ; 1=Disable Device Stage (legacy UI).
+"PreventDeviceMetadataFromNetwork"=dword:00000001 ; 1=Block metadata download. 
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DigitalLocker]
+"DisableDigitalLocker"=dword:00000001 ; 1=Disable Digital Locker (legacy licensing UI).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Disk]
+"DisableNvCache"=dword:00000001 ; 1=Disable disk NV cache (rarely needed; use only for policy reasons).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DiskDiagnostic]
+"Microsoft-Windows-DiskDiagnosticDataCollector"=dword:00000000 ; 0=Disable data collection.
+"Microsoft-Windows-DiskDiagnosticResolver"=dword:00000000 ; 0=Disable resolver actions.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\DriverSearching]
+"DontPromptForWindowsUpdate"=dword:00000001 ; 1=Don’t prompt to search WU for drivers.
+"DontSearchCatalogs"=dword:00000001 ; 1=Don’t search driver catalogs.
+"DontSearchWindowsUpdate"=dword:00000001 ; 1=Don’t search WU.
+"DriverUpdateWizardWuSearchEnabled"=dword:00000000 ; 0=Wizard won’t search WU.
+"SearchOrderConfig"=dword:00000000 ; 0=Never check WU automatically.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\EarlyLaunch]
+"DriverLoadPolicy"=dword:00000001 ; 1=Good-only ELAM driver policy (strict). 3=Good+Unknown; 8=All (not recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\EdgeUI]
+"AllowEdgeSwipe"=dword:00000000 ; 0=Disable edge swipe gestures (reduces accidental invocation/surface); 1=Enable.
+"DisableHelpTips"=dword:00000001 ; 1=Hide help tips (less noise/telemetry); 0=Show.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\EnhancedStorage]
+"TcgAllowOptOut"=dword:00000000 ; 0=Do NOT allow users to opt out of eDrive/TCG security; 1=Allow opt-out.
+"TcgSecurityActivationDisabled"=dword:00000001 ; 0=Allow eDrive/TCG security activation (more exposure); 1=Block activation (more secure).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\EventLog\EventForwarding]
+"DisableSubscription"=dword:00000001 ; 1=Disable WEF subscriptions (no event forwarding); 0=Enable (preferred for SOC/EDR).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Explorer]
+"AllowOnlineTips"=dword:00000000 ; 0=Disable online tips.
+"DisableAutoRestartApps"=dword:00000001 ; 1=Disable auto-restart of registered apps after sign-in.
+"DisableContextMenusInStart"=dword:00000000 ; 1=Disable Start menu context menus.
+"DisableCopilot"=dword:00000001 ; 1=Disable Windows Copilot.
+"DisableOnlineContent"=dword:00000001 ; 1=Block online content in shell.
+"DisableSearchBoxRecommendations"=dword:00000001 ; 1=Disable Store recommendations in Search.
+"DisableSearchBoxSuggestions"=dword:00000001 ; 1=Disable web/typed suggestions.
+"DisableThumbnailCache"=dword:00000001 ; 1=Disable thumbnail caching (privacy; perf trade-off).
+"DisableThumbnails"=dword:00000001 ; 1=Disable thumbnails entirely (strict; usability hit).
+"DisableThumbsDBOnNetworkFolders"=dword:00000001 ; 1=No Thumbs.db on network shares (cleaner/security).
+"HideRecentJumplists"=dword:00000001 ; 1=Hide recent items in Jump Lists (privacy).
+"HideRecommendedSection"=dword:00000001 ; 1=Hide Recommended on Start (privacy).
+"NoAddPrinter"=dword:00000000 ; 0=Allow adding printers; 1=Block (set 1 for stricter).
+"NoAutorunFromRemovableDrive"=dword:00000001 ; 1=Block Autorun from removable drives.
+"NoCDBurning"=dword:00000001 ; 1=Disable built-in CD burning.
+"NoCloudFileProvider"=dword:00000001 ; 1=Disable cloud file providers (OneDrive, etc.).
+"NoInPlaceSharing"=dword:00000001 ; 1=Disable in-place sharing (Share UI).
+"NoInternetOpenWith"=dword:00000001 ; 1=Don’t search the web/Store for “Open with”.
+"NoNetCrawling"=dword:00000001 ; 1=Disable network locations crawling for libraries.
+"NoNewAppAlert"=dword:00000001 ; 1=Disable “new app installed” notifications.
+"NoOnlineFiles"=dword:00000001 ; 1=Disable online files integration.
+"NoPinningStoreToTaskbar"=dword:00000001 ; 1=Block pinning Microsoft Store to taskbar.
+"NoStartMenuMFUprogramsList"=dword:00000001 ; 1=Hide “Most frequently used” apps (privacy).
+"NoUseStoreOpenWith"=dword:00000001 ; 1=Don’t suggest Store for unknown file types.
+"NoWebServices"=dword:00000001 ; 1=Disable web services in shell.
+"StartLayoutFile"="C:\\Windows\\System32\\StartLayout.xml" ; Path to enforced Start layout XML (pair with LockedStartLayout=1 to lock).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\FileHistory]
+"Disabled"=dword:00000001 ; 1=Disable File History (feature off).
+"DisableFileHistory"=dword:00000001 ; 1=Disable File History (redundant but fine).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\FileSys]
+"EnableDistributedLinkTracking"=dword:00000000 ; 0=Disable DLT (privacy/traffic reduction).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\GameDVR]
+"AllowGameDVR"=dword:00000000 ; 0=Disable GameDVR/recording (privacy/perf).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\HandwritingErrorReports]
+"PreventHandwritingErrorReports"=dword:00000001 ; 1=Block sending handwriting error reports.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Installer]
+"AlwaysInstallElevated"=dword:00000000 ; 0=Do NOT allow elevated MSI for users (secure).
+"DisableMedia"=dword:00000001 ; 1=Block install from removable media.
+"DisableMSI"=dword:00000001 ; 1=Disable MSI for unmanaged apps (GPO-managed still allowed).
+"DisablePatch"=dword:00000001 ; 1=Block MSP patch installs by users.
+"DisableRollback"=dword:00000001 ; 1=Disable rollback (less artifact retention).
+"DisableUserInstalls"=dword:00000001 ; 1=Users can’t install per-user MSIs.
+"EnableAdminTSRemote"=dword:00000000 ; 0=No remote admin installs via TS for users.
+"EnableUserControl"=dword:00000000 ; 0=No user control of installer UI/features.
+"SafeForScripting"=dword:00000000 ; 0=MSI automation not marked safe for scripting.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Kernel DMA Protection]
+"DeviceEnumerationPolicy"=dword:00000001 ; 1=Block external DMA devices (e.g., Thunderbolt) when locked (recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\LanmanWorkstation]
+"AllowInsecureGuestAuth"=dword:00000000 ; 0=Disallow SMB guest auth (secure).
+"AllowPKU2U"=dword:00000000 ; 0=Disable peer identities/PKU2U (recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\LDAP]
+"LDAPClientIntegrity"=dword:00000002 ; 2=Require signing; 1=Negotiate; 0=None (require=best).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\LLTD]
+"AllowLLTDIOOnDomain"=dword:00000000 ; 0=Disable LLTD mapper on domain.
+"AllowLLTDIOOnPrivateNet"=dword:00000000 ; 0=Disable on private networks.
+"AllowLLTDIOOnPublicNet"=dword:00000000 ; 0=Disable on public networks.
+"AllowRspndrOnDomain"=dword:00000000 ; 0=Disable LLTD responder on domain.
+"AllowRspndrOnPrivateNet"=dword:00000000 ; 0=Disable on private networks.
+"AllowRspndrOnPublicNet"=dword:00000000 ; 0=Disable on public networks.
+"EnableLLTDIO"=dword:00000000 ; 0=Disable LLTD mapper service.
+"EnableRspndr"=dword:00000000 ; 0=Disable LLTD responder service.
+"ProhibitLLTDIOOnPrivateNet"=dword:00000001 ; 1=Prohibit on private nets.
+"ProhibitLLTDIOOnPublicNet"=dword:00000001 ; 1=Prohibit on public nets.
+"ProhibitRspndrOnPrivateNet"=dword:00000001 ; 1=Prohibit responder on private nets.
+"ProhibitRspndrOnPublicNet"=dword:00000001 ; 1=Prohibit responder on public nets.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\LocationAndSensors]
+"DisableLocation"=dword:00000001 ; 1=Disable location (privacy).
+"DisableLocationScripting"=dword:00000001 ; 1=Disable script access to location.
+"DisableSensors"=dword:00000001 ; 1=Disable sensors.
+"DisableWindowsLocationProvider"=dword:00000001 ; 1=Disable Windows location provider.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Maps]
+"AllowCellularData"=dword:00000000 ; 0=No cellular data for Maps.
+"AllowUnattendedDataUpdate"=dword:00000000 ; 0=No unattended map updates.
+"AllowUntriggeredNetworkUsage"=dword:00000000 ; 0=No background network usage.
+"AutoDownload"=dword:00000000 ; 0=No auto-download maps.
+"AutoDownloadAndUpdateMapData"=dword:00000000 ; 0=No auto-update.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\MDM]
+"DisableRegistration"=dword:00000001 ; 1=Block MDM enrollment (Intune/AAD MDM). (Only set if you won’t enroll.)
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Messaging]
+"AllowMessageSync"=dword:00000000 ; 0=Disable message sync (privacy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\MobilityCenter]
+"NoMobilityCenter"=dword:00000001 ; 1=Disable Mobility Center.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\NCA]
+"EnableNca"=dword:00000000 ; 0=Disable Network Connectivity Assistant (DirectAccess helper).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\NetCache]
+"DisableCachingOfRoamingProfiles"=dword:00000001 ; 1=Disable caching roaming profiles.
+"Enabled"=dword:00000000 ; 0=Disable Offline Files feature.
+"SyncAtLogoff"=dword:00000000 ; 0=No sync at logoff.
+"SyncAtLogon"=dword:00000000 ; 0=No sync at logon.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Network Connections]
+"NC_AllowNetBridge"=dword:00000000 ; 0=Disallow network bridging.
+"NC_AllowNetBridge_NLA"=dword:00000000 ; 0=No NLA for net bridge (irrelevant if bridge disabled).
+"NC_DoNotShowLocalOnlyIcon"=dword:00000000 ; 0=Show limited connectivity icon.
+"NC_LanChangeProperties"=dword:00000000 ; 0=Disallow users changing LAN props.
+"NC_ProhibitIcs"=dword:00000001 ; 1=Disable ICS (Internet Connection Sharing).
+"NC_ShowSharedAccessUI"=dword:00000001 ; 0=Hide ICS UI.
+"NC_StdDomainUserSetLocation"=dword:00000000 ; 1=Allow domain users to set network location.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator]
+"ActiveDnsProbeHost"="localhost" ; Custom NCSI DNS probe host.
+"ActiveWebProbeHost"="127.0.0.1" ; Custom NCSI web probe host (loopback).
+"ActiveWebProbePath"="/ncsi.txt" ; Custom path (non-resolving).
+"NoActiveProbe"=dword:00000001 ; 1=Disable active probes → “No Internet” status (privacy; may impact Store/SSO).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\NetworkIsolation]
+"UnenlightenedNetworkIsolation"=dword:00000000 ; 0=Default container networking behavior.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\NetworkProvider\HardenedPaths]
+"\\*\\NETLOGON"="RequireMutualAuthentication=1,RequireIntegrity=1,RequirePrivacy=1" ; Add encryption.
+"\\*\\SYSVOL"="RequireMutualAuthentication=1,RequireIntegrity=1,RequirePrivacy=1"   ; Add encryption.
+;"\\*\\NETLOGON"="RequireMutualAuthentication=1,RequireIntegrity=1" ; UNC hardening for NETLOGON (add RequirePrivacy=1 to force encryption).
+;"\\*\\SYSVOL"="RequireMutualAuthentication=1,RequireIntegrity=1" ; UNC hardening for SYSVOL (consider RequirePrivacy=1).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\OneDrive]
+"DisableFileSyncNGSC"=dword:00000001 ; 1=Disable OneDrive sync client.
+"DisablePersonalSync"=dword:00000001 ; 1=Disable personal (MSA) OneDrive.
+"FilesOnDemandEnabled"=dword:00000000 ; 0=Disable Files On-Demand.
+"PreventNetworkTrafficPreUserSignIn"=dword:00000001 ; 1=Block OneDrive traffic pre sign-in.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\OOBE]
+"DisablePrivacyExperience"=dword:00000001 ; 1=Skip privacy OOBE pages.
+"DisableVoice"=dword:00000001 ; 1=Disable voice features during OOBE (Cortana, etc.).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PeerDist]
+"EnableBranchCache"=dword:00000000 ; 0=Disable BranchCache/PeerDist (privacy); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Personalization]
+"NoLockScreen"=dword:00000000 ; 0=Keep lock screen (recommended with legal banner); 1=Disable.
+"NoLockScreenCamera"=dword:00000001 ; 1=Block camera on lock screen (safer).
+"NoLockScreenSlideshow"=dword:00000001 ; 1=Disable slideshow on lock (privacy).
+"NoLockScreenSpotlight"=dword:00000001 ; 1=Disable Spotlight on lock (privacy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell]
+"EnableScripts"=dword:00000001 ; 1=Allow script execution per policy; pairs with ExecutionPolicy.
+"ExecutionPolicy"="AllSigned" ; Only signed scripts run (recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging]
+"EnableModuleLogging"=dword:00000001 ; 1=Enable module logging (visibility).
+"ModuleNames"="*" ; Log all modules (redundant with subkey list, but OK).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames]
+"1"="*" ; Wildcard: log all modules.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging]
+"EnableInvocationHeader"=dword:00000001 ; 1=Include invocation header.
+"EnableScriptBlockInvocationLogging"=dword:00000001 ; 1=Record invocations.
+"EnableScriptBlockLogging"=dword:00000001 ; 1=Enable script block logging.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\Transcription]
+"EnableInvocationHeader"=dword:00000001 ; 1=Include invocation header in transcripts.
+"EnableTranscripting"=dword:00000001 ; 1=Enable session transcription.
+"IncludeInvocationHeader"=dword:00000001 ; 1=Duplicate include (fine).
+"OutputDirectory"="%SystemDrive%\\_temp\\Logs\\PowerShellTranscripts" ; Transcript path (ensure locked ACLs).  ; (Case-insensitive env var; normalized)
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PresentationSettings]
+"NoPresentationSettings"=dword:00000001 ; 1=Disable Presentation Settings.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PreviewBuilds]
+"AllowBuildPreview"=dword:00000000 ; 0=Block Insider builds (recommended).
+"EnableConfigFlighting"=dword:00000000 ; 0=Disable flighting configuration.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Psched]
+"NonBestEffortLimit"=dword:00000000 ; 0% reserved for background (perf bias); >0 reserves bandwidth for system/updates.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PushToInstall]
+"DisablePushToInstall"=dword:00000001 ; 1=Disable “push to install” from Store.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Recall]
+"AllowRecall"=dword:00000000 ; 0=Disable Windows Recall (privacy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Recovery]
+"DisableResetToCloud"=dword:00000001 ; 1=Disable Cloud Reset (limits recovery vectors).
+"DisableResetToFactoryDefaults"=dword:00000001 ; 1=Disable factory reset.
+"DisableUserManagedWinRE"=dword:00000001 ; 1=Users cannot manage WinRE.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Sandbox]
+"AllowSandbox"=dword:00000001 ; 0=Disable Windows Sandbox (less isolation); 1=Enable.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\ScriptedDiagnostics]
+"EnableDiagnostics"=dword:00000000 ; 0=Disable scripted diagnostics.
+"EnableQueryRemoteServer"=dword:00000000 ; 0=Don’t query remote servers.  ; FIX: removed stray dot at end of your original line
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\ScriptedDiagnosticsProvider\Policy]
+"DisableQueryRemoteServer"=dword:00000001 ; 1=Disable remote query.
+"EnableDiagnostics"=dword:00000000 ; 0=Disable diagnostics.
+"EnableQueryRemoteServer"=dword:00000000 ; 0=No remote query.
+"ValidateTrust"=dword:00000001 ; 1=Require signature trust.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\ScSrv]
+"DisableSmartCard"=dword:00000001 ; 1=Disable Smart Card service (conflicts with “force smart card logon” policies).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Server\ServerManager]
+"DoNotOpenServerManagerAtLogon"=dword:00000001 ; 1=Don’t auto-open Server Manager (server SKUs).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Servicing]
+"UseWindowsUpdate"=dword:00000000 ; 0=Default (don’t force contact/avoid); 1=Never contact WU; 2=Contact WU for repair.
+"RepairContentServerSource"=dword:00000001 ; 1=Use specified local source for repair.
+"LocalSourcePath"="C:\\Windows\\Sources\\SxS" ; Local repair source path (ensure present).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\SettingSync]
+"DisableSettingSync"=dword:00000001 ; 1=Disable settings sync (privacy).
+"DisableSettingSyncUserOverride"=dword:00000001 ; 1=User cannot change.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Skydrive]
+"DisableLibrariesDefaultSaveToSkyDrive"=dword:00000001 ; 1=Block default save to OneDrive (legacy policy path).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\SmartCard]
+"AllowIntegratedUnblock"=dword:00000000 ; 0=Disallow integrated unblock.
+"AllowPinCaching"=dword:00000000 ; 0=No PIN caching.
+"DisableCertificatePropagation"=dword:00000001 ; 1=Disable cert propagation from smart card logon.
+"ForceReadingAllCertificates"=dword:00000001 ; 1=Force reading all certs on smart card.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Start Menu and Taskbar]
+"DisableSuggestedApps"=dword:00000001 ; 1=Disable suggested apps/promotions.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\StorageSense]
+"AllowDownloadsFolderCleanup"=dword:00000000 ; 0=Don’t auto-clean Downloads.
+"AllowStorageSenseCloudContentDehydration"=dword:00000000 ; 0=Don’t dehydrate cloud files.
+"AllowStorageSenseDownloadsCleanup"=dword:00000001 ; 1=Allow cleanup of Downloads  ; (in tension with first key—decide desired behavior)
+"AllowStorageSenseGlobal"=dword:00000000 ; 0=Disable Storage Sense globally.
+"AllowStorageSenseRecycleBinCleanup"=dword:00000000 ; 0=Don’t auto-empty Recycle Bin.
+"AllowStorageSenseTemporaryFilesCleanup"=dword:00000000 ; 0=Don’t remove temp files.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Suggestions]
+"SuggestedActionsEnabled"=dword:00000000 ; 0=Disable Suggested Actions.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\System]
+"AllowClipboardHistory"=dword:00000000 ; 0=Disable clipboard history (privacy).
+"AllowCrossDeviceClipboard"=dword:00000000 ; 0=Disable across-device clipboard.
+"AllowDomainPINLogon"=dword:00000000 ; 0=Disable domain PIN logon (WHfB PIN).
+"AllowNearShare"=dword:00000000 ; 0=Disable Near Share.
+"AllowOnlineTips"=dword:00000000 ; 0=Disable online tips.
+"AllowSignInOptions"=dword:00000001 ; 0=Hide sign-in options on lock screen.
+"BlockDomainPicturePassword"=dword:00000001 ; 1=Block picture password (domain).
+"BlockUserFromChangingAccountPicture"=dword:00000001 ; 1=Block changing account picture.
+"BlockUserFromShowingAccountDetailsOnSignin"=dword:00000001 ; 1=Hide account details on sign-in.
+"DeleteRoamingCache"=dword:00000001 ; 1=Delete cached roaming profiles at logoff.
+"DeleteTempProfiles"=dword:00000001 ; 1=Delete temp profiles at logoff.
+"DisableAcrylicBackgroundOnLogon"=dword:00000001 ; 1=Disable acrylic (privacy/perf).
+"DisableAutomaticReDeployment"=dword:00000001 ; 1=Disable automatic redeployment.
+"DisableFeatureSuggestedActions"=dword:00000001 ; 1=Disable feature-level suggestions.
+"DisableLockScreenAppNotifications"=dword:00000001 ; 1=Disable app notifs on lock (privacy).
+"DisablePINReset"=dword:00000001 ; 1=Disable “I forgot my PIN” on lock.
+"DisableStatusMessages"=dword:00000000 ; 0=Show normal status messages.
+"DontDisplayNetworkSelectionUI"=dword:00000001 ; 1=Hide network selection at logon.
+"EnableActivityFeed"=dword:00000000 ; 0=Disable activity feed (timeline).
+"EnableAppInstallControl"=dword:00000001 ; 1=Enable App Install Control (uses SmartScreen lists).
+"EnableCdp"=dword:00000000 ; 0=Disable Connected Devices Platform.
+"EnableFirstLogonAnimation"=dword:00000000 ; 0=Disable first logon animation.
+"EnableLogonScriptDelay"=dword:00000001 ; 1=Enable logon script delay.
+"EnableMmx"=dword:00000000 ; (Unknown/legacy) Likely inert on modern builds.
+"EnableNearbySharing"=dword:00000000 ; 0=Disable Nearby Sharing.
+"EnableNearShare"=dword:00000000 ; 0=Disable Near Share (dup of above on some builds).
+"EnableNearSharing"=dword:00000000 ; 0=Disable Near Sharing (variant).
+"EnableShareAcrossDevices"=dword:00000000 ; 0=Disable Share across devices.
+"EnableSmartScreen"=dword:00000000 ; 0=Disable SmartScreen at shell (not recommended).
+"EnableSudo"=dword:00000000 ; 0=Disable Windows “sudo” feature (safer).
+"EnableWebSignIn"=dword:00000000 ; 0=Disable web sign-in.
+"LogonScriptDelay"=dword:00000000 ; 0s logon script delay (takes effect if enabled).
+"NoEncryptOnMove"=dword:00000000 ; 0=Allow EFS on move to NTFS.
+"NoLocalPasswordResetQuestions"=dword:00000001 ; 1=Disable local password reset Q&A.
+"OnlyAllowLocalUserProfiles"=dword:00000001 ; 1=Disallow roaming profiles.
+"PublishUserActivities"=dword:00000000 ; 0=Don’t publish activities (timeline).
+"ScriptGpNetworkStartTimeout"=dword:0000003c ; 60s GP script network start timeout.
+"ShellSmartScreenLevel"="Warn" ; SmartScreen level (“Warn”/“Block”/“Off”). Off=least safe.
+"SudoMode"=dword:00000000 ; 0=Disabled (aligns with EnableSudo=0).
+"TailoredExperiencesWithDiagnosticDataEnabled"=dword:00000000 ; 0=Disable tailored experiences.
+"UploadUserActivities"=dword:00000000 ; 0=Don’t upload activities.
+"UsePINSignIn"=dword:00000000 ; 0=Disable PIN sign-in (affects WHfB).
+"UseWindowsHelloForBusiness"=dword:00000000 ; 0=Disable WHfB device-wide.
+"VerboseStatus"=dword:00000001 ; 1=Verbose boot/shutdown status.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\TabletPC]
+"PreventHandwritingDataSharing"=dword:00000001 ; 1=Block sharing handwriting data.
+"PreventHandwritingErrorReports"=dword:00000001 ; 1=Block error reports.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Task Scheduler]
+"DisableAutomaticMaintenanceWakeUp"=dword:00000001 ; 1=Disable wake for automatic maintenance.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\VoiceActivation]
+"EnableVoiceActivation"=dword:00000000 ; 0=Disable voice activation.
+"NoWakeWord"=dword:00000001 ; 1=Disable wake word.
+"PreventVoiceActivationOnLockScreen"=dword:00000001 ; 1=Block on lock screen.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WCM\Layered\Negotiate]
+"DisablePasspoint"=dword:00000001 ; 1=Disable Wi-Fi Passpoint (privacy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WcmSvc\GroupPolicy]
+"fBlockInternetSharing"=dword:00000001 ; 1=Block ICS.
+"fBlockNonDomain"=dword:00000001 ; 1=Block connections to non-domain networks.
+"fBlockNonPreferred"=dword:00000001 ; 1=Block non-preferred networks.
+"fEnableWISPr"=dword:00000000 ; 0=Disable captive portal auto-auth.
+"fMinimizeConnections"=dword:00000001 ; 1=Minimize simultaneous connections.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WCN\Registrars]
+"DisableFlashConfigRegistrar"=dword:00000001 ; 1=Disable WCN via Flash.
+"DisableInBand802DOT11Registrar"=dword:00000001 ; 1=Disable in-band 802.11 registrar.
+"DisableUPnPRegistrar"=dword:00000001 ; 1=Disable UPnP registrar.
+"DisableWiredRegistrar"=dword:00000001 ; 1=Disable wired registrar.
+"DisableWPDRegistrar"=dword:00000001 ; 1=Disable WPD registrar.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WCN\UI]
+"DisableWcnUi"=dword:00000000 ; 1=Disable WCN UI.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WDI]
+"ScenarioExecutionEnabled"=dword:00000000 ; 0=Disable diagnostic scenario execution.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WebThreatDefense]
+"Enabled"=dword:00000000 ; 0=Disable Web Threat Defense (Defender for Endpoint); 1=Enable (recommended if licensed).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WinCal]
+"DisableReminders"=dword:00000001 ; 1=Disable Calendar reminders (legacy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Windows Chat]
+"ChatIcon"=dword:00000003 ; 3=Hide Chat icon on taskbar (build-dependent mapping: 0/1 show, 2/3 hide).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Windows Error Reporting]
+"Disabled"=dword:00000001 ; 1=Disable WER globally.
+"CorporateWerServer"="" ; Empty → no corporate server (safe if WER disabled).
+"DisableQueue"=dword:00000001 ; 1=Don’t queue reports.
+"DontSendAdditionalData"=dword:00000001 ; 1=Don’t send extra WER data.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Windows Feeds]
+"EnableFeeds"=dword:00000000 ; 0=Disable Feeds/News & Interests (Widgets backend).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Windows Search]
+"AllowCloudSearch"=dword:00000000 ; 0=No cloud content search.
+"AllowCortana"=dword:00000000 ; 0=Disable Cortana.
+"AllowIndexingEncryptedStoresOrItems"=dword:00000000 ; 0=Don’t index encrypted content.
+"AllowSearchToUseLocation"=dword:00000000 ; 0=No location for search.
+"ConnectedSearchUseWeb"=dword:00000000 ; 0=Don’t use web for search.
+"DisableBackoff"=dword:00000000 ; 0=Keep backoff (less disk/CPU), 1=Disable backoff (faster indexing).
+"DisableRemovableDriveIndexing"=dword:00000001 ; 1=Don’t index removable drives.
+"DisableSearchHighlights"=dword:00000001 ; 1=Disable Search highlights.
+"DisableWebSearch"=dword:00000001 ; 1=Disable web results in Start/Search.
+"EnableDynamicContentInWSB"=dword:00000000 ; 0=No dynamic content.
+"PreventIndexingEncryptedStoresOrItems"=dword:00000001 ; 1=Block indexing encrypted items (reinforces above).
+"PreventIndexingOutlook"=dword:00000001 ; 1=Don’t index Outlook (perf/privacy; reduces Outlook search).
+"PreventRemoteQueries"=dword:00000001 ; 1=No remote queries.
+"SafeSearchMode"=dword:00000002 ; 2=Strict; 1=Moderate; 0=Off.
+"PreventIndexingRemovableDrive"=dword:00000001 ; Extra belt-and-suspenders on removable media.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsAI]
+"AllowRecallEnablement"=dword:00000000 ; 0=Block Recall enablement.
+"DisableAIDataAnalysis"=dword:00000001 ; 1=Disable AI data analysis features.
+"DisableClickToDo"=dword:00000001 ; 1=Disable Click-to-Do.
+"DisableCocreator"=dword:00000001 ; 1=Disable Cocreator.
+"DisableGenerativeFill"=dword:00000001 ; 1=Disable Generative Fill.
+"DisableImageCreator"=dword:00000001 ; 1=Disable Image Creator.
+"DisableSettingsAgent"=dword:00000001 ; 1=Disable Settings AI agent.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsAnytimeUpgrade]
+"DisableWAU"=dword:00000001 ; Duplicate of “Windows Anytime Upgrade” above (OK).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsBackup]
+"DisableWindowsBackup"=dword:00000001 ; Duplicate of “Windows Backup” above (OK).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsColorSystem]
+;"DisableCalibrationLoader"=dword:00000001 ; 1=Disable display ICC calibration loader (may affect color accuracy).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsCopilot]
+"TurnOffWindowsCopilot"=dword:00000001 ; 1=Disable Windows Copilot.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsInsider]
+"AllowBuildPreview"=dword:00000000 ; 0=Block Insider builds (recommended).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsUpdate]
+"AllowAutoWindowsUpdateDownloadOverMeteredNetwork"=dword:00000000 ; 0=No auto-download over metered.
+"AllowBuildPreview"=dword:00000000 ; 0=Block preview builds via WU.
+"AllowMUUpdateService"=dword:00000001 ; 1=Include Microsoft Update (Office, etc.).
+"BranchReadinessLevel"=dword:00000020 ; 0x20=Business readiness (Semi-Annual/GA channel on older builds).
+"DisableOSUpgrade"=dword:00000001 ; 1=Block OS feature upgrades via WU.
+"DisableUXWUAccess"=dword:00000000 ; 1=Hide/disable WU UI access.
+"DisableWindowsUpdateAccess"=dword:00000000 ; 0=Do not fully block WU (UI is blocked by the key above).
+"DoNotConnectToWindowsUpdateInternetLocations"=dword:00000000 ; 0=Allow MS internet locations (set 1 to block).
+"DownloadRepairContentFromWindowsUpdateInternetLocations"=dword:00000000 ; 0=No repair content from MS internet locations.
+"ExcludeWUDriversInQualityUpdate"=dword:00000001 ; 1=Exclude driver updates from quality updates.
+"ManagePreviewBuilds"=dword:00000001 ; Manage preview builds via policy.
+"ManagePreviewBuildsPolicyValue"=dword:00000000 ; 0=Disable previews.
+"SetActiveHours"=dword:00000001 ; 1=Enforce active hours (add Start/End if desired).
+"SetAutoRestartDeadline"=dword:00000000 ; 0=No auto-restart deadline (adds flexibility).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsUpdate\AU]
+"NoAUAsDefaultShutdownOption"=dword:00000001 ; 1=Don’t show “Install updates and shut down”.
+"NoAutoRebootWithLoggedOnUsers"=dword:00000001 ; 1=No auto reboot while users logged on.
+"NoAutoUpdate"=dword:00000000 ; 0=Enable Automatic Updates.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WinRM\Client]
+"AllowBasic"=dword:00000000 ; 0=Disallow Basic auth.
+"AllowCredSSP"=dword:00000000 ; 0=Disallow CredSSP (prevents certain auth delegation).
+"AllowDigest"=dword:00000000 ; 0=Disallow Digest auth.
+"AllowKerberos"=dword:00000001 ; 1=Allow Kerberos.
+"AllowNegotiate"=dword:00000001 ; 1=Allow Negotiate.
+"AllowRemoteShellAccess"=dword:00000000 ; 0=Disallow WinRS remote shell.
+"AllowUnencryptedTraffic"=dword:00000000 ; 0=Require encryption.
+"DisableRunAs"=dword:00000001 ; 1=Disable RunAs in WinRM.
+"TrustedHosts"="" ; Empty list (no non-Kerberos hosts).
+"AllowBasic"=dword:00000000 ; Duplicate (OK).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WinRM\Service]
+"AllowAutoConfig"=dword:00000000 ; 0=No auto config of WinRM service.
+"AllowBasic"=dword:00000000 ; 0=Disallow Basic.
+"AllowDigest"=dword:00000000 ; 0=Disallow Digest.
+"AllowRemoteShellAccess"=dword:00000000 ; 0=Disallow remote shell.
+"AllowUnencryptedTraffic"=dword:00000000 ; 0=Require encryption.
+"DisableRunAs"=dword:00000001 ; 1=Disable RunAs in service.
+"IPv4Filter"="" ; No allow-list (service effectively disabled anyway).
+"IPv6Filter"="" ; No allow-list.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WinRM\Service\WinRS]
+"AllowRemoteShellAccess"=dword:00000000 ; 0=Disallow WinRS.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WLAN\Filter]
+;"AllowInternet"=dword:00000000 ; 0=Block internet access for filtered WLANs (ensure this matches your connectivity needs).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WlanSvc\ANQP]
+"AllowHS2"=dword:00000000 ; 0=Disable Hotspot 2.0 (Passpoint).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Wlansvc\GroupPolicy]
+"fAutoConnectAllowed"=dword:00000000 ; 0=Do not auto-connect to Wi-Fi.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WorkFolders]
+"DisableSyncOnMetered"=dword:00000001 ; 1=Don’t sync on metered.
+"EnableWorkFolders"=dword:00000000 ; 0=Disable Work Folders client.
+"ForceProvisioning"=dword:00000000 ; 0=Don’t force provisioning.
+"RequireEncryption"=dword:00000001 ; 1=Require Work Folders encryption (if enabled).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WorkplaceJoin]
+"AutoWorkplaceJoin"=dword:00000000 ; 0=Disable auto workplace join.
+"BlockAADWorkplaceJoin"=dword:00000001 ; 1=Block Azure AD workplace join (limits AAD device registration).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WwanSvc]
+"AllowAutoConnect"=dword:00000000 ; 0=No WWAN auto-connect.
+"AllowRoaming"=dword:00000000 ; 0=No WWAN roaming.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\DomainProfile]
+"AllowLocalIPsecPolicyMerge"=dword:00000000 ; 0=Block local IPSec policy merge.
+"AllowLocalPolicyMerge"=dword:00000000 ; 0=Block local firewall rule merge.
+"DefaultInboundAction"=dword:00000001 ; 1=Block inbound by default.
+"DefaultOutboundAction"=dword:00000000 ; 0=Allow outbound by default (stricter=1).
+"DisableNotifications"=dword:00000000 ; 0=Show notifications.
+"DisableUnicastResponsesToMulticastBroadcast"=dword:00000001 ; 1=Disable unicast responses.
+"DoNotAllowExceptions"=dword:00000001 ; 1=Don’t allow exceptions.
+"EnableFirewall"=dword:00000001 ; 1=Enable firewall.
+"LogDroppedPackets"=dword:00000001 ; 1=Log drops.
+"LogFilePath"="%systemdrive%\\_temp\\Firewall\\domain_fw.log" ; Log path (ensure folder/ACLs).
+"LogSuccessfulConnections"=dword:00000000 ; 0=Don’t log allowed connections (set 1 for fuller visibility).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\DomainProfile\Logging]
+"LogDroppedPackets"=dword:00000001 ; Duplicate logging settings (OK).
+"LogFilePath"="%systemdrive%\\_temp\\Firewall\\domain_fw.log"
+"LogSuccessfulConnections"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\Policy\DomainProfile]
+"DisableIPSecExempt"=dword:00000001 ; 1=Disable IPsec exempt traffic.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\Policy\PublicProfile]
+"DisableIPSecExempt"=dword:00000001 ; 1=Disable IPsec exempt traffic.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\Policy\StandardProfile]
+"DisableIPSecExempt"=dword:00000001 ; 1=Disable IPsec exempt traffic.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\PrivateProfile]
+"AllowLocalIPsecPolicyMerge"=dword:00000000 ; 0=Block local IPSec policy merge.
+"AllowLocalPolicyMerge"=dword:00000000 ; 0=Block local firewall rule merge.
+"DefaultInboundAction"=dword:00000001 ; 1=Block inbound.
+"DefaultOutboundAction"=dword:00000000 ; 0=Allow outbound (1=stricter).
+"DisableNotifications"=dword:00000000 ; 0=Show notifications.
+"DisableUnicastResponsesToMulticastBroadcast"=dword:00000001 ; 1=Disable unicast responses.
+"DoNotAllowExceptions"=dword:00000001 ; 1=No exceptions.
+"EnableFirewall"=dword:00000001 ; 1=Enable firewall.
+"LogDroppedPackets"=dword:00000001 ; 1=Log drops.
+"LogFilePath"="%systemdrive%\\_temp\\Firewall\\private_fw.log" ; NOTE: different from Logging subkey below (pick one path).
+"LogSuccessfulConnections"=dword:00000000 ; 0=No allowed-log.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\PrivateProfile\Logging]
+"LogDroppedPackets"=dword:00000001
+"LogFilePath"="%systemdrive%\\_temp\\Firewall\\private_fw.log" ; NOTE: different from Logging subkey below (pick one path).
+"LogSuccessfulConnections"=dword:00000000 ; 0=No allowed-log.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\PublicProfile]
+"AllowLocalIPsecPolicyMerge"=dword:00000000
+"AllowLocalPolicyMerge"=dword:00000000
+"DefaultInboundAction"=dword:00000001
+"DefaultOutboundAction"=dword:00000000
+"DisableNotifications"=dword:00000000 ; 1=Hide notifications on Public (ok).
+"DisableUnicastResponsesToMulticastBroadcast"=dword:00000001
+"DoNotAllowExceptions"=dword:00000001
+"EnableFirewall"=dword:00000001
+"LogDroppedPackets"=dword:00000001
+"LogFilePath"="%systemroot%\\system32\\LogFiles\\Firewall\\public_fw.log" ; 
+"LogSuccessfulConnections"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsFirewall\PublicProfile\Logging]
+"LogDroppedPackets"=dword:00000001
+"LogFilePath"="%systemroot%\\system32\\LogFiles\\Firewall\\public_fw.log" ; 
+"LogSuccessfulConnections"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsInkWorkspace]
+"AllowSuggestedAppsInWindowsInkWorkspace"=dword:00000000 ; 0=No suggested apps (privacy).
+"AllowWindowsInkWorkspace"=dword:00000000 ; 0=Disable Ink Workspace (restricts pen UI).
+"AllowWindowsInkWorkspaceOnLockScreen"=dword:00000000 ; 0=No Ink on lock (safer).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsMediaPlayer]
+"DisableAutoUpdate"=dword:00000001 ; 1=Disable WMP auto-updates.
+"DisableFirstRunWizard"=dword:00000001 ; 1=Skip first-run wizard.
+"GroupPrivacyAcceptance"=dword:00000001 ; 1=Assume privacy policy accepted (no prompt).
+"PreventCDDVDMetadataRetrieval"=dword:00000001 ; 1=No online metadata queries.
+"PreventCodecDownload"=dword:00000001 ; 1=Block codec downloads (safer).
+"PreventLibrarySharing"=dword:00000001 ; 1=Disable media sharing.
+"PreventMusicFileInfo"=dword:00000001 ; 1=Don’t update music file info online.
+"PreventMusicFileMetadataRetrieval"=dword:00000001 ; 1=Block metadata retrieval.
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\WindowsStore]
+"AutoDownload"=dword:00000000 ; Auto-update installed Store apps (no consumer promos).
+"DisableOSUpgrade"=dword:00000000 ; 0=Do not block OS upgrade via Store (WU already blocked elsewhere).
+"DisableStoreApps"=dword:00000000 ; 0=Allow Store apps (set 1 to block).
+"RemoveWindowsStore"=dword:00000000 ; 0=Keep Microsoft Store visible.
+"RequirePrivateStoreOnly"=dword:00000000 ; 0=Allow public Store (1=Private Store only).
+
+[HKEY_LOCAL_MACHINE\Software\Policies\Teradici\PCoIP\pcoip_admin]
+"pcoip.client_clipboard_state"=dword:00000001 ; 1=Enable client clipboard (VDI).
+"pcoip.server_clipboard_state"=dword:00000001 ; 1=Enable server clipboard (VDI).
+
+[HKEY_LOCAL_MACHINE\Software\WOW6432Node\Microsoft\.NETFramework]
+"SystemDefaultTlsVersions"=dword:00000001 ; Use OS default TLS for 32-bit .NET.
+
+[HKEY_LOCAL_MACHINE\Software\WOW6432Node\Microsoft\.NETFramework\v2.0.50727]
+"SchUseStrongCrypto"=dword:00000001 ; Prefer strong crypto (TLS1.2+).
+"SystemDefaultTlsVersions"=dword:00000001 ; Use OS TLS defaults.
+
+[HKEY_LOCAL_MACHINE\Software\WOW6432Node\Microsoft\.NETFramework\v4.0.30319]
+"SchUseStrongCrypto"=dword:00000001 ; Strong crypto for .NET 4.x 32-bit.
+"SystemDefaultTlsVersions"=dword:00000001 ; Use OS TLS defaults.
+
+[HKEY_LOCAL_MACHINE\Software\WOW6432Node\Microsoft\Cryptography\Wintrust\Config]
+"EnableCertPaddingCheck"="1" ; Enable Authenticode certificate padding checks (safer).
+
+[HKEY_LOCAL_MACHINE\Software\WOW6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug]
+"Auto"=dword:00000000 ; 0=Do not auto-invoke debugger on crash (safer).
+
+[HKEY_LOCAL_MACHINE\Software\WOW6432Node\Policies\Microsoft\Windows\AppCompat]
+"DisableEngine"=dword:00000001  ; 1=Disable AppCompat engine (reduces legacy shims).
+"DisablePCA"=dword:00000001  ; 1=Disable Program Compatibility Assistant.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control]
+"ExternalBootAllowed"=dword:00000000 ; 0=Disallow external boot (USB/Thunderbolt) — mitigates evil-maid.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CI]
+"VulnerableDriverBlocklistEnable"=dword:00000001 ; 1=Enable Microsoft vulnerable driver blocklist.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CI\Config]
+"VulnerableDriverBlocklistEnable"=dword:00000001 ; Mirror setting (redundant but fine).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CI\Policy]
+"VerifiedAndReputablePolicyState"=dword:00000001 ; Enable Verified/Reputable (WDAC/SAC baseline—stricter app trust).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CrashControl]
+"AlwaysKeepMemoryDump"=dword:00000000 ; 0=Don’t keep dump persistently.
+"AutoReboot"=dword:00000000 ; 0=Do not auto-reboot on crash (leave screen for triage).
+"CrashDumpEnabled"=dword:00000000 ; 0=No crash dumps (forensic visibility reduced).
+"DisplayParameters"=dword:00000001 ; 0=No extra crash UI.
+"EnableLogFile"=dword:00000001 ; 1=Write crash log file.
+"ForceNoUI"=dword:00000000 ; 0=Allow basic crash UI.
+"LogEvent"=dword:00000001 ; 0=Don’t write event log on crash (consider 1 for DFIR).
+"Overwrite"=dword:00000001 ; 1=Overwrite dump if created.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard]
+"ConfigureSystemGuardLaunch"=dword:00000001 ; 1=Enable Secure Launch (System Guard).
+"EnableVirtualizationBasedSecurity"=dword:00000001 ; 1=Enable VBS.
+"RequirePlatformSecurityFeatures"=dword:00000003 ; 3=Secure Boot + DMA protection required.
+"HVCIMATRequired"=dword:00000001 ; 1=Require HVCI memory attribute table (stricter).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity]
+"Enabled"=dword:00000001 ; 1=HVCI (Kernel-mode code integrity) ON.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem]
+"LongPathsEnabled"=dword:00000001 ; 1=Enable long paths (>260 chars).
+"NtfsDisable8dot3NameCreation"=dword:00000001 ; 1=Disable 8.3 names (perf/security).
+"NtfsDisableCompression"=dword:00000001 ; 1=Disable NTFS compression.
+"NtfsDisableEncryption"=dword:00000001 ; 1=Disable EFS (aligns with earlier policy).
+"NtfsDisableLastAccessUpdate"=dword:00000001 ; 1=Disable last access updates (perf).
+"NtfsMemoryUsage"=dword:00000002 ; 2=Increase NTFS memory usage (perf bias).
+"SymlinkLocalToLocalEvaluation"=dword:00000001 ; 1=Allow local→local symlinks.
+"SymlinkLocalToRemoteEvaluation"=dword:00000000 ; 0=Block local→remote symlinks.
+"SymlinkRemoteToLocalEvaluation"=dword:00000000 ; 0=Block remote→local symlinks.
+"SymlinkRemoteToRemoteEvaluation"=dword:00000000 ; 0=Block remote→remote symlinks.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
+"HwSchMode"=dword:00000002 ; 2=Hardware-accelerated GPU scheduling ON (perf).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
+"AuditFilteringPlatformConnection"=dword:00000003 ; Audit policy (Success+Failure) via LSA (dup of Audit settings).
+"AuditFilteringPlatformPacketDrop"=dword:00000003 ; Audit packet drops (S+F).
+"AuditLogonEvents"=dword:00000003 ; Audit logon (S+F).
+"AuditProcessCreation"=dword:00000003 ; Audit process create (S+F).
+"AuditProcessTermination"=dword:00000003 ; Audit process end (S+F).
+"DisableDomainCreds"=dword:00000001 ; 1=Disallow domain cached creds for delegations.
+"DisableLanManHash"=dword:00000001 ; 1=Disable LM hash storage.
+"DisableRestrictedAdmin"=dword:00000001 ; 1=Disable Restricted Admin (RDP /netonly logon).
+"EveryoneIncludesAnonymous"=dword:00000000 ; 0=Anonymous not part of Everyone.
+"ForceGuest"=dword:00000000 ; 0=No force Guest.
+"LdapEnforceChannelBinding"=dword:00000001 ; 1=Enable channel binding (compat mode).
+"LimitBlankPasswordUse"=dword:00000001 ; 1=No blank password over network logon.
+"LmCompatibilityLevel"=dword:00000005 ; 5=Send NTLMv2 only; refuse LM & NTLM.
+"LsaCfgFlags"=dword:00000001 ; 1=Credential Guard enabled (with UEFI lock).
+"NoLMHash"=dword:00000001 ; 1=Do not store LM hash.
+"RestrictAnonymous"=dword:00000001 ; 1=No anonymous enumeration.
+"RestrictAnonymousSAM"=dword:00000001 ; 1=No anonymous SAM.
+"RestrictRemoteSAM"=dword:00000001 ; 1=Restrict remote SAM.
+"RunAsPPL"=dword:00000001 ; 1=LSASS as PPL (protected).
+"RunAsPPLBoot"=dword:00000001 ; 1=PPL from boot (stronger).
+"SCENoApplyLegacyAuditPolicy"=dword:00000001 ; 1=Use advanced audit policy only.
+"TurnOffAnonymousBlock"=dword:00000000 ; 0=Don’t turn off anonymous block.
+"UseMachineId"=dword:00000001 ; 1=Use machine ID for SSO hardening.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\CredentialGuard]
+"Enabled"=dword:00000001  ; Explicit CG ON (already implied via LsaCfgFlags=1).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\FIPSAlgorithmPolicy]
+"Enabled"=dword:00000001 ; 1=FIPS mode ON (may break non-FIPS crypto; only if required by policy).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters]
+"AllowWeakCrypto"=dword:00000000 ; 0=No RC4/DES weak crypto.
+"EnableCbacAndArmor"=dword:00000001 ; 1=Enable FAST/Armor (hardens Kerberos).
+"NoTGTDelegation"=dword:00000001 ; 1=Disallow unconstrained delegation.
+"PacRequestorEnforcement"=dword:00000002 ; 2=Enforce & audit PAC Requestor.
+"StrongCertificateBindingEnforcement"=dword:00000002 ; 2=Strict KDC cert binding.
+"SupportedEncryptionTypes"=dword:00000038 ; AES128(0x08)+AES256(0x10)+Future(0x20); RC4/DES disabled.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0]
+"allownullsessionfallback"=dword:00000000 ; 0=No fallback to null session.
+"AuditReceivingNTLMTraffic"=dword:00000002 ; 2=Audit all NTLM traffic received.
+"NtlmMinClientSec"=dword:20080030 ; Require 128-bit, NTLMv2 session security, SPN, signing.
+"NtlmMinServerSec"=dword:20080030 ; Same on server side.
+"RestrictReceivingNTLMTraffic"=dword:00000002 ; 2=Deny all NTLM (receive).
+"RestrictSendingNTLMTraffic"=dword:00000002 ; 2=Deny all NTLM (send) — very strict, can break legacy.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\pku2u]
+"AllowOnlineID"=dword:00000000 ; 0=Disable Online ID/PKU2U.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power]
+"HibernateEnabled"=dword:00000000  ; 0=Disable Hibernate (security/perf choice).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling]
+"PowerThrottlingOff"=dword:00000001 ; 1=Disable power throttling (perf).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print]
+"AllowUserManageForms"=dword:00000000 ; 0=Users cannot manage custom forms.
+"EnableRemoteSpoolerRPC"=dword:00000000 ; 0=Disable remote spooler RPC (reduces attack surface; may block network printing).
+"EnableRFCFormat"=dword:00000001 ; 1=Use RFC format (logging/headers).
+"ForceDriverIsolation"=dword:00000002 ; 2=Isolate print drivers (recommended).
+"RpcAuthnLevelPrivacyEnabled"=dword:00000001 ; 1=Encrypt spooler RPC.
+"RpcUseNamedPipeProtocol"=dword:00000000 ; 0=Disallow named pipes (safer).
+"RpcUseTcpIpPort"=dword:00000001 ; Prefer RPC over TCP (align with named-pipes off)
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Providers\Internet Print Provider]
+"Name"="-" ; Disable legacy Internet Print Provider.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl]
+"Win32PrioritySeparation"=dword:00000026 ; Foreground boost tuning (perf preference).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Remote Assistance]
+"CreateRemoteAssistanceTickets"=dword:00000000 ; 0=Disable RA invitations.
+"fAllowFullControl"=dword:00000000 ; 0=No full control via RA.
+"fAllowToGetHelp"=dword:00000000 ; 0=Disallow RA.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecureBoot]
+"MicrosoftUpdateManagedOptIn"=dword:00005944 ; Set by updates (opaque; leave as-is).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\Ldap]
+"LdapEnforceChannelBinding"=dword:00000002 ; 2=Always enforce channel binding (stricter than LSA’s 1).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL]
+"AllowInsecureRenegoClients"=dword:00000000 ; 0=Disallow insecure renegotiation (clients).
+"AllowInsecureRenegoServers"=dword:00000000 ; 0=Disallow insecure renegotiation (servers).
+"AllowInsecureRenegotiation"=dword:00000000 ; 0=Fully disable insecure renegotiation.
+"DisableTlsCompression"=dword:00000001 ; 1=Disable TLS compression (CRIME/BREACH).
+"EventLogging"=dword:00000001 ; 1=Log Schannel events.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\DES 56/56]
+"Enabled"=dword:00000000 ; 0=Disable DES.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\NULL]
+"Enabled"=dword:00000000 ; 0=Disable NULL cipher.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 128/128]
+"Enabled"=dword:00000000 ; 0=Disable RC4.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 40/128]
+"Enabled"=dword:00000000 ; 0=Disable RC4 (40).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 56/128]
+"Enabled"=dword:00000000 ; 0=Disable RC4 (56).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 64/128]
+"Enabled"=dword:00000000 ; 0=Disable RC4 (64).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\Triple DES 168]
+"Enabled"=dword:00000000 ; 0=Disable 3DES.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Hashes\MD5]
+"Enabled"=dword:00000000 ; 0=Disable MD5.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\KeyExchangeAlgorithms\Diffie-Hellman]
+"ClientMinKeyBitLength"=dword:00000800 ; 2048-bit min DH.
+"ServerMinKeyBitLength"=dword:00000800 ; 2048-bit min DH.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Client]
+"Enabled"=dword:00000000 ; 0=Disable SSL 3.0 client.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server]
+"Enabled"=dword:00000000 ; 0=Disable SSL 3.0 server.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Client]
+"Enabled"=dword:00000000 ; 0=Disable TLS 1.0 client.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Server]
+"Enabled"=dword:00000000 ; 0=Disable TLS 1.0 server.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Client]
+"Enabled"=dword:00000000 ; 0=Disable TLS 1.1 client.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server]
+"Enabled"=dword:00000000 ; 0=Disable TLS 1.1 server.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client]
+"DisabledByDefault"=dword:00000000 ; 0=Not disabled by default.
+"Enabled"=dword:00000001 ; 1=Enable TLS 1.2 client.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server]
+"DisabledByDefault"=dword:00000000 ; 0=Not disabled by default.
+"Enabled"=dword:00000001 ; 1=Enable TLS 1.2 server.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client]
+"DisabledByDefault"=dword:00000000 ; 0=Not disabled by default.
+"Enabled"=dword:00000001 ; 1=Enable TLS 1.3 client.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server]
+"DisabledByDefault"=dword:00000000 ; 0=Not disabled by default.
+"Enabled"=dword:00000001 ; 1=Enable TLS 1.3 server.
+"DisablePostHandshakeAuth"=dword:00000001 ; Optional hardening for specific stacks.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest]
+"UseLogonCredential"=dword:00000000 ; 0=Do not cache plaintext WDigest creds.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager]
+"CWDIllegalInDllSearch"=dword:00000002 ; 2=Exclude current dir from DLL search (safer).
+"SafeDllSearchMode"=dword:00000001 ; 1=Enable safe search order.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\kernel]
+"DisableExceptionChainValidation"=dword:00000000 ; 0=Keep SEH chain validation ON.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management]
+"ClearPageFileAtShutdown"=dword:00000001 ; 1=Zero pagefile at shutdown (privacy; slows shutdown).
+"FeatureSettingsOverride"=dword:00000000 ; 0=No disablement of SpecExec mitigations.
+"FeatureSettingsOverrideMask"=dword:00000003 ; Mask for above.
+"LargeSystemCache"=dword:00000000 ; 0=Client-optimized cache.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters]
+"EnablePrefetcher"=dword:00000000 ; 0=Disable Prefetch (perf trade-off).
+"EnableSuperfetch"=dword:00000000 ; 0=Disable Superfetch/SysMain.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Power]
+"HiberbootEnabled"=dword:00000000 ; 0=Disable Fast Startup (hiberboot).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\StorageDevicePolicies]
+;"WriteProtect"=dword:00000001 ; 1=Write protect USB storage (strict).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server]
+"DeleteTempDirsOnExit"=dword:00000001 ; 1=Delete temp dirs at logoff.
+"fDenyTSConnections"=dword:00000001  ; 1=Disable RDP (overrides RDP-Tcp settings).
+"PerSessionTempDir"=dword:00000001   ; 1=Per-session temp dirs.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp]
+"DisableEncryption"=dword:00000000    ; 0=Encryption required.
+"fDisableAudioCapture"=dword:00000001 ; 1=Disable audio capture.
+"fDisableCcm"=dword:00000001          ; 1=Disable COM port redirection.
+"fDisableCdm"=dword:00000001          ; 1=Disable drive redirection.
+"fDisableClip"=dword:00000001         ; 1=Disable clipboard.
+"fDisableCpm"=dword:00000001          ; 1=Disable printer redirection.
+"fDisableLPT"=dword:00000001          ; 1=Disable LPT redirection.
+"fUseUdpPortRedirector"=dword:00000000 ; 0=Disable UDP transport.
+"KeepAliveEnable"=dword:00000001      ; 1=Send keepalives.
+"KeepAliveInterval"=dword:000493e0    ; 300000 ms (5 min).
+"MinEncryptionLevel"=dword:00000003   ; 3=High.
+"SecurityLayer"=dword:00000002        ; 2=TLS.
+"UDPTunnelEnabled"=dword:00000000     ; 0=No UDP tunnel.
+"UserAuthentication"=dword:00000001   ; 1=NLA required.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\WMI\Autologger\AutoLogger-Diagtrack-Listener]
+"Start"=dword:00000000 ; 0=Disable DiagTrack listener.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\WMI\Autologger\SQMLogger]
+"Start"=dword:00000000 ; 0=Disable SQM logger.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Policies\EarlyLaunch]
+"DriverLoadPolicy"=dword:00000001 ; 1=Good-only (strict ELAM); 3=Good+Unknown; 8=All (unsafe).
+
+[HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Config]
+"AnnounceFlags"=dword:00000005        ; Marks this host as ALWAYS a time server (bit 0x1) and ALWAYS a reliable time source (bit 0x4). Typically used on an authoritative NTP source; has limited effect if NtpServer is disabled.
+"EnableSecureTimeSeeding"=dword:00000001 ; 0=disable Secure Time Seeding (no time hints from SSL/TLS); 1=enable. Disabling reduces external signal influence, but also removes a safety net after RTC/CMOS jumps.
+"MaxNegPhaseCorrection"=dword:00000000 ; **0 is effectively “don’t accept any negative correction”**; recommended to set to a bounded window (e.g., 3600 sec) or 172800 (48h) depending on your policy.
+"MaxPollInterval"=dword:0000000a      ; Max poll exponent 10 (= 1024s) for system poll; with SpecialPoll flag set, SpecialPollInterval is used instead.
+"MaxPosPhaseCorrection"=dword:00000000 ; **0 is effectively “don’t accept any positive correction”**; set to a bounded window (e.g., 3600 sec) or 172800 (48h) per hardening guidance.
+"MinPollInterval"=dword:00000006      ; Min poll exponent 6 (= 64s).
+"UtilizeSslTimeData"=dword:00000001     ; Official name of Secure Time Seeding toggle on newer builds (keeps behavior aligned with “EnableSecureTimeSeeding”=0).
+
+[HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Parameters]
+"NtpServer"="pool.ntp.org,0x9"         ; 0x1=SpecialInterval, 0x2=UseAsFallbackOnly, 0x4=SymmetricActive, 0x8=Client; 0x9=Client+SpecialPoll.
+"Type"="NTP"                           ; NTP (manual peers), NT5DS (domain hierarchy), AllSync, or NoSync.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient]
+"Enabled"=dword:00000001               ; 1=enable NtpClient.
+"EventLogFlags"=dword:00000001         ; Log reachability changes.
+"SpecialPollInterval"=dword:0000a8c0   ; 43200 sec (12h) between polls when SpecialInterval flag is set.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpServer]
+"Enabled"=dword:00000000               ; 0=do NOT act as an NTP server (no inbound UDP/123 serving).
+
+[HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters]
+"DisabledComponents"=dword:00000032     ;Prefer IPv4 over IPv6 (recommended if you just want IPv4 preference).
+"DisableIPSourceRouting"=dword:00000002 ; 2=drop all IPv6 source-routed packets.
+"EnableICMPRedirects"=dword:00000000   ; 0=ignore ICMPv6 redirects.
+"UseTemporaryAddresses"=dword:00000002 ; 2=prefer temporary (privacy) addresses for outbound (less tracking).
+
+[HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters]
+"DisableDynamicUpdate"=dword:00000001  ; Don’t auto-register A/AAAA in DNS (privacy).
+"DisableIPSourceRouting"=dword:00000002 ; 2=drop all IPv4 source-routed packets.
+"DisableTaskOffload"=dword:00000001    ; 1=disable NIC offloads (can reduce some NIC bugs but often hurts performance/CPU).
+"EnableDeadGWDetect"=dword:00000000    ; 0=disable dead gateway detection.
+"EnableICMPRedirect"=dword:00000000    ; Deprecated/singular name; use EnableICMPRedirects; you also set that below.
+"EnableICMPRedirects"=dword:00000000   ; 0=ignore IPv4 redirects.
+"EnableLMHOSTS"=dword:00000000         ; Disable LMHOSTS lookups.
+"EnablePMTUBHDetect"=dword:00000000    ; Don’t try to detect black-hole routers (safer defaults).
+"IPEnableRouter"=dword:00000000        ; Not a router.
+"KeepAliveTime"=dword:000493e0         ; 300000 ms = 5 min TCP keep-alive time.
+"NodeType"=dword:00000008             ; If NetBIOS is enabled, 8=Hybrid (WINS first then broadcast). Prefer Hybrid over P-node unless you have WINS. Remove the Tcpip\Parameters NodeType.
+"NoNameReleaseOnDemand"=dword:00000001 ; Don’t release NetBIOS name on demand (spoofing protection).
+"PerformRouterDiscovery"=dword:00000000 ; Disable router discovery.
+"SynAttackProtect"=dword:00000001      ; Legacy SYN protection; newer TCP stack mitigations exist—harmless to leave on.
+"TcpMaxDataRetransmissions"=dword:00000003 ; Lower data retransmits (3).
+"TcpMaxSynRetransmissions"=dword:00000002  ; Fewer SYN retries (2).
+"UseDomainNameDevolution"=dword:00000000   ; Disable DNS suffix devolution.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers]
+"1"="10.0.0.10"                        ; Only allow these managers.
+"2"="10.0.0.11"
+
+[HKLM\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\ValidCommunities]
+"public"=dword:00000000                ; 0=None (no permission). ⚠ Better to DELETE the “public” community entirely.
+"readonly-secure"=dword:00000004       ; 4=Read-only. (8=Read/Write, 16=Read/Create)
+-"public"                              ; Delete “public” community to satisfy many scanners.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet]
+"EnableActiveProbing"=dword:00000000   ; Disable active NCSI probes (privacy), may show “No Internet” status while Internet works.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters]
+"EnableLMHOSTS"=dword:00000000         ; Disable LMHOSTS.
+"NoNameReleaseOnDemand"=dword:00000001 ; Don’t release NetBIOS name.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters]
+"DisablePasswordChange"=dword:00000000 ; Allow machine account password changes (secure default).
+"MaximumPasswordAge"=dword:0000001e    ; 30 days machine acct password rotation.
+"RequireKerberos"=dword:00000001       ; Require Kerberos where applicable.
+"RequireSignOrSeal"=dword:00000001     ; Require SMB signing.
+"RequireStrongKey"=dword:00000001      ; Require strong key.
+"SealSecureChannel"=dword:00000001     ; Seal secure channel.
+"SignSecureChannel"=dword:00000001     ; Sign secure channel.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters]
+"AuditSmb1Access"=dword:00000001       ; Log SMB1 access attempts (SMB1 disabled anyway).
+"AutoShareServer"=dword:00000000       ; No admin shares on server SKU.
+"AutoShareWks"=dword:00000000          ; No admin shares on client SKU.
+"DisableCompression"=dword:00000001    ; Disable SMB compression (hardening vs. past vulns, minor perf hit).
+"EnableSecuritySignature"=dword:00000001 ; Allow SMB signing.
+"EnableStrictNameChecking"=dword:00000001 ; Prevents UNC aliasing.
+"EncryptData"=dword:00000001           ; SMB encryption (perf cost; improves confidentiality).
+"ForceGuest"=dword:00000000            ; Don’t force guest.
+"NullSessionPipes"=hex(7):00,00        ; No null session pipes.
+"NullSessionShares"=hex(7):00,00       ; No null session shares.
+"RequireSecureNegotiate"=dword:00000001 ; Require SMB secure negotiate.
+"RequireSecuritySignature"=dword:00000001 ; Require SMB signing.
+"RestrictNullSessAccess"=dword:00000001 ; Restrict null session.
+"SMB1"=dword:00000000                  ; SMB1 disabled.
+"SmbServerNameHardeningLevel"=dword:00000001 ; Name hardening on.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters]
+"AllowInsecureGuestAuth"=dword:00000000 ; Block guest SMB.
+"DisableCompression"=dword:00000001     ; Disable SMB compression client-side.
+"DisableMultiChannel"=dword:00000001    ; Disable SMB Multichannel (hardening; reduces perf/high-availability).
+"EnableLeasing"=dword:00000000          ; Disable SMB2 leasing (can reduce perf; mitigates some app coherency issues).
+"EnableMulticast"=dword:00000000        ; Disable SMB multicast (privacy).
+"EnablePlainTextPassword"=dword:00000000 ; No plaintext auth.
+"EnableQuic"=dword:00000000             ; Disable SMB over QUIC (may impact Azure Files over QUIC).
+"EnableSecureNegotiate"=dword:00000001  ; Enforce secure negotiate.
+"EnableSecuritySignature"=dword:00000001 ; Enable SMB signing.
+"ExtendedSessTimeout"=dword:00000000    ; Default session timeout behavior.
+"RequireSecureNegotiate"=dword:00000001 ; Require secure negotiate.
+"RequireSecuritySignature"=dword:00000001 ; Require signing.
+"SMB1"=dword:00000000                   ; Client SMB1 disabled.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\LDAP]
+"LDAPClientIntegrity"=dword:00000002   ; 2=require signing (sealing if available).
+
+[HKLM\SYSTEM\CurrentControlSet\Services\HTTP\Parameters]
+"EnableHttp2Cleartext"=dword:00000000  ; Disable HTTP/2 over h2c (cleartext).
+"EnableHttp2Tls"=dword:00000000        ; Disable HTTP/2 over TLS (h2). Mitigates certain HTTP/2-class issues; can reduce perf/compat; many apps fall back to HTTP/1.1.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\FDResPub]
+"Start"=dword:00000004                 ; Disabled. Stops publishing SMB/Printers via WS-DISCOVERY; reduces LAN exposure.
+"Type"=dword:00000020                  ; Service type.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters]
+"DisableAutoProxy"=dword:00000001      ; Don’t auto-use WPAD/Proxy from DNS.
+"DisableParallelAandAAAA"=dword:00000001 ; Don’t query A/AAAA in parallel (minor latency increase; privacy).
+"EnableAutoDoh"=dword:00000000         ; Disable automatic DoH (you also set a policy elsewhere).
+"EnableMDNS"=dword:00000000            ; Disable mDNS.
+"UseHostsFile"=dword:00000001          ; Use HOSTS file.
+
+[HKLM\SYSTEM\CurrentControlSet\Services\BthAvctpSvc\Parameters\Bats]
+"UserPrefersClassicAudio"=dword:00000001 ; 1=prefer Classic (A2DP) over LE Audio; 0=prefer LE Audio. Keeping 1 can maximize compatibility; 0 gives LE Audio benefits (battery/latency) if your stack supports it.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WlanSvc\Parameters]
+"ScanWhenAssociated"=dword:00000000 ; 0=Do NOT background-scan while connected (reduces probe traffic/fingerprint; may slow roaming). 1=Allow scans (better roaming).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\Setup]
+"CmdLine"=""                ; Command run by setup when SetupType≠0 (often "setup -newsetup" during sysprep/upgrade). Empty = nothing launches.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\ALG]
+"Start"=dword:00000003 ; Manual OK, but Recommend 4 (Disable) unless using ICS/Teredo helpers.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\AppReadiness]
+"Start"=dword:00000003 ; Keep 3 (needed for Store app install/update).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\AxInstSV]
+"Start"=dword:00000003 ; Legacy IE ActiveX installer — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BcastDVRUserService]
+"Start"=dword:00000003 ; Game DVR — Recommend 4 (Disable) for privacy/hardening.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BthServ]
+"Start"=dword:00000003 ; Keep 3 (Bluetooth pairing/discovery).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\cbdhsvc]
+"Start"=dword:00000003 ; Clipboard history/sync — Recommend 4 (Disable) since cross-device clipboard is blocked.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\CDPSvc]
+"Start"=dword:00000003 ; Connected Devices Platform — Recommend 4 (Disable) given CDP is policy-blocked.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\CDPUserSvc]
+"Start"=dword:00000003 ; CDP user broker — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\ClipSVC]
+"Start"=dword:00000003 ; Keep 3 (Store licensing).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\CloudExperienceHostBroker]
+"Start"=dword:00000003 ; Manual OK; 4 (Disable) can break some OOBE/feature UX — keep 3.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\CSC]
+"Start"=dword:00000003 ; Offline Files (domain) — Recommend 4 (Disable) for AAD-only scenario.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\CscService]
+"Start"=dword:00000003 ; Same as above — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DeviceAssociationBrokerSvc]
+"Start"=dword:00000003 ; Keep 3 (device pairing UX).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DeviceAssociationService]
+"Start"=dword:00000003 ; Keep 3 (pairing peripherals inc. BT).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DhaService]
+"Start"=dword:00000003 ; Device Health Attestation — Keep 3 (useful for AAD/MDM compliance; stays off).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\diagnosticshub.standardcollector.service]
+"Start"=dword:00000003 ; Diagnostics hub — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DiagSvc]
+"Start"=dword:00000003 ; Diagnostic Service Host — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DiagTrack]
+"Start"=dword:00000003 ; Connected User Experiences/Telemetry — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DisplayEnhancementService]
+"Start"=dword:00000003 ; HDR/adaptive brightness — Keep 3 (harmless Manual).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DmEnrollmentSvc]
+"Start"=dword:00000003 ; MDM enrollment — Keep 3 (AAD/Intune scenarios may trigger).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\dmwappushservice]
+"Start"=dword:00000003 ; WAP push/telemetry plumbing — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DusmSvc]
+"Start"=dword:00000003 ; Data usage — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EFS]
+"Start"=dword:00000003 ; EFS — Recommend 4 (Disable) (policy already disables EFS).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Fax]
+"Start"=dword:00000003 ; Fax — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\fdPHost]
+"Start"=dword:00000003 ; Function Discovery Provider Host — Keep 3 (helps printer discovery).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\FDPhost]
+"Start"=dword:00000003 ; Duplicate case of fdPHost — Keep one; Windows is case-insensitive.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\fhsvc]
+"Start"=dword:00000003 ; File History — Recommend 4 (Disable) (you disabled File History via policy).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\fthsvc]
+"Start"=dword:00000003 ; Fault Tolerant Heap — Recommend 4 (Disable) (perf + attack surface).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\FTPSVC]
+"Start"=dword:00000003 ; IIS FTP — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\GameInputSvc]
+"Start"=dword:00000003 ; Xbox/game input — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\IEEtwCollectorService]
+"Start"=dword:00000003 ; IE telemetry — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\InstallService]
+"Start"=dword:00000003 ; Keep 3 (Store/MSIX installs).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer]
+"Start"=dword:00000003 ; SMB server — Recommend 4 (Disable) unless you share folders (you hardened SMB already).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\lfsvc]
+"Start"=dword:00000003 ; Geolocation — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LicenseManager]
+"Start"=dword:00000003 ; Keep 3 (Store licensing).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LLDP]
+"Start"=dword:00000003 ; LLDP driver — Recommend 4 (Disable) unless needed for network inventory.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\lldpsvc]
+"Start"=dword:00000003 ; LLDP service — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\lltdio]
+"Start"=dword:00000003 ; Link-Layer Topology driver — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\lltdsvc]
+"Start"=dword:00000003 ; LLTD mapper — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LxssManager]
+"Start"=dword:00000003 ; WSL — Recommend 4 (Disable) unless you use WSL.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MapsBroker]
+"Start"=dword:00000003 ; Offline maps — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MessagingService]
+"Start"=dword:00000003 ; Legacy messaging — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MixedRealityOpenXRSvc]
+"Start"=dword:00000003 ; Mixed Reality — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\mrxsmb10]
+"Start"=dword:00000003 ; SMB1 client driver — Recommend 4 (Disable) (SMB1 already off).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MSDTC]
+"Start"=dword:00000003 ; Distributed Transactions — Recommend 4 (Disable) unless required.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MSiSCSI]
+"Start"=dword:00000003 ; iSCSI Initiator — Recommend 4 (Disable) unless used.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MSMQ]
+"Start"=dword:00000003 ; MSMQ — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MSMQTriggers]
+"Start"=dword:00000003 ; MSMQ Triggers — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT]
+"Start"=dword:00000003 ; NetBIOS over TCP/IP — Recommend 4 (Disable) (you disabled LMHOSTS/NetBIOS).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetMsmqActivator]
+"Start"=dword:00000003 ; WCF MSMQ Activation — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetPipeActivator]
+"Start"=dword:00000003 ; WCF Named-Pipe Activation — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetTcpActivator]
+"Start"=dword:00000003 ; WCF TCP Activation — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetTcpPortSharing]
+"Start"=dword:00000003 ; Net.TCP Port Sharing — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NfcSvc]
+"Start"=dword:00000003 ; NFC — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NfsClnt]
+"Start"=dword:00000003 ; NFS client — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NfsService]
+"Start"=dword:00000003 ; NFS server — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\OneSyncSvc]
+"Start"=dword:00000003 ; Contacts/Calendar sync — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\p2pimsvc]
+"Start"=dword:00000003 ; P2P Identity — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\p2psvc]
+"Start"=dword:00000003 ; Peer Networking — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PcaSvc]
+"Start"=dword:00000003 ; Program Compatibility Assistant — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PeerDistSvc]
+"Start"=dword:00000003 ; BranchCache — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PhoneSvc]
+"Start"=dword:00000003 ; Phone Service — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PimIndexMaintenanceSvc]
+"Start"=dword:00000003 ; PIM index — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PNRPsvc]
+"Start"=dword:00000003 ; PNRP — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PNRPSvc]
+"Start"=dword:00000003 ; PNRP peer name — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PrintNotify]
+"Start"=dword:00000003 ; Keep 3 (print UX; Wi-Fi printers).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PrintWorkflowUserSvc]
+"Start"=dword:00000003 ; Keep 3 (modern print workflows).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PrjFlt]
+"Start"=dword:00000003 ; Projected FS (WSL/OneDrive FOD) — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\RasAuto]
+"Start"=dword:00000003 ; Keep 3 (on-demand dial helper).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\RasMan]
+"Start"=dword:00000003 ; Keep 3 (VPN manager, on-demand).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\RemoteAccess]
+"Start"=dword:00000003 ; RRAS server — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\RemoteRegistry]
+"Start"=dword:00000003 ; Recommend 4 (Disable) (baseline hardening).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\RetailDemo]
+"Start"=dword:00000003 ; Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SensorDataService]
+"Start"=dword:00000003 ; Sensors — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SensorService]
+"Start"=dword:00000003 ; Sensor monitor — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SensrSvc]
+"Start"=dword:00000003 ; Location sensor — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SharedAccess]
+"Start"=dword:00000003 ; ICS/NAT — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SharedRealitySvc]
+"Start"=dword:00000003 ; Mixed Reality — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\simptcp]
+"Start"=dword:00000003 ; Simple TCP services — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\smbdirect]
+"Start"=dword:00000003 ; RDMA/SMB Direct — Recommend 4 (Disable) on clients.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SmbDirect]
+"Start"=dword:00000003 ; Duplicate of above — keep one; Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SNMP]
+"Start"=dword:00000003 ; SNMP — Recommend 4 (Disable) unless explicitly used.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SNMPTRAP]
+"Start"=dword:00000003 ; SNMP Trap — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SpatialDataService]
+"Start"=dword:00000003 ; Spatial data — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SSDPSRV]
+"Start"=dword:00000003 ; SSDP discovery — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\ssh-agent]
+"Start"=dword:00000003 ; OpenSSH agent — Keep 3 if you use Git/SSH; else 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\sshd]
+"Start"=dword:00000003 ; OpenSSH Server — Recommend 4 (Disable) unless required.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\stisvc]
+"Start"=dword:00000003 ; WIA (scanners/cameras) — Keep 3 for MFP scanning; else 4.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\swprv]
+"Start"=dword:00000003 ; Keep 3 (VSS software provider).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SysMain]
+"Start"=dword:00000003 ; Superfetch/SysMain — Recommend 4 (Disable) per your earlier perf/telemetry posture.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TabletInputService]
+"Start"=dword:00000003 ; Touch/pen/IME — Recommend 4 (Disable) unless tablet/pen used.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TapiSrv]
+"Start"=dword:00000003 ; Telephony — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TlntSvr]
+"Start"=dword:00000003 ; Telnet Server — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TrkWks]
+"Start"=dword:00000003 ; Distributed Link Tracking — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UnistoreSvc]
+"Start"=dword:00000003 ; UWP data storage — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\upnphost]
+"Start"=dword:00000003 ; UPnP host — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\USBSTOR]
+"Start"=dword:00000003 ; Keep 3 (Manual) + you already enforce WriteProtect=1 (good balance).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserDataSvc]
+"Start"=dword:00000003 ; User data access — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VSS]
+"Start"=dword:00000003 ; Keep 3 (on-demand volume shadow copies).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W3SVC]
+"Start"=dword:00000003 ; IIS Web Server — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WalletService]
+"Start"=dword:00000003 ; Wallet — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WAS]
+"Start"=dword:00000003 ; IIS WAS — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WbioSrvc]
+"Start"=dword:00000003 ; Biometrics — Recommend 4 (Disable) (you blocked biometrics via policy).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\wcncsvc]
+"Start"=dword:00000003 ; WCN — Recommend 4 (Disable) (policy blocks WCN).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WcncSvc]
+"Start"=dword:00000003 ; WCN (variant/case) — Same as above; set 4.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WcnCsvc]
+"Start"=dword:00000003 ; WCN (duplicate name form) — Set 4; keep a single canonical entry.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WcnSvc]
+"Start"=dword:00000003 ; WCN — Set 4; Nearby Sharing is disabled.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WdiServiceHost]
+"Start"=dword:00000003 ; Diagnostics — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WdiSystemHost]
+"Start"=dword:00000003 ; Diagnostics — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WebClient]
+"Start"=dword:00000003 ; WebDAV client — Recommend 4 (Disable) (common hardening baseline).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WebThreatDefenseUserSvc]
+"Start"=dword:00000003 ; 3rd-party — If unused, set 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\webthreatdefsvc]
+"Start"=dword:00000003 ; 3rd-party — If unused, set 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Wecsvc]
+"Start"=dword:00000003 ; Event Collector — Recommend 4 (Disable) (standalone).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\wercplsupport]
+"Start"=dword:00000003 ; WER control panel support — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WerSvc]
+"Start"=dword:00000003 ; Windows Error Reporting — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WFDSConMgrSvc]
+"Start"=dword:00000003 ; Wi-Fi Direct Service — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinRM]
+"Start"=dword:00000003 ; WinRM — Recommend 4 (Disable) (you already locked it via policy).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\wisvc]
+"Start"=dword:00000003 ; Windows Insider — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WMPNetworkSvc]
+"Start"=dword:00000003 ; WMP sharing — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\workfolderssvc]
+"Start"=dword:00000003 ; Work Folders — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WpcMonSvc]
+"Start"=dword:00000003 ; Parental Controls — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WPDBusEnum]
+"Start"=dword:00000003 ; Keep 3 (portable device plug-and-play, MTP phones/cameras).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WpnService]
+"Start"=dword:00000003 ; Push notifications — Recommend 4 (Disable) (you disabled notifications via policy).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WsaService]
+"Start"=dword:00000003 ; Subsystem for Android — Recommend 4 (Disable) if unused.
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WSearch]
+"Start"=dword:00000003 ; Search indexer — Keep 3 (Manual) (you limited indexing; Manual avoids CPU).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\XblAuthManager]
+"Start"=dword:00000003 ; Xbox — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\XblGameSave]
+"Start"=dword:00000003 ; Xbox — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\XboxGipSvc]
+"Start"=dword:00000003 ; Xbox — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\XboxNetApiSvc]
+"Start"=dword:00000003 ; Xbox — Recommend 4 (Disable).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\XpsSvc]
+"Start"=dword:00000003 ; XPS services — Recommend 4 (Disable) (unless you use XPS writer/viewer).
+
+
+
